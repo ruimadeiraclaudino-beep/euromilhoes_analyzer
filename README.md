@@ -1,8 +1,8 @@
 # EuroMilhões Analyzer 🎱⭐
 
-[![CI](https://github.com/rmadeira/euromilhoes_analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/rmadeira/euromilhoes_analyzer/actions/workflows/ci.yml)
-[![Docker](https://github.com/rmadeira/euromilhoes_analyzer/actions/workflows/docker.yml/badge.svg)](https://github.com/rmadeira/euromilhoes_analyzer/actions/workflows/docker.yml)
-[![codecov](https://codecov.io/gh/rmadeira/euromilhoes_analyzer/branch/main/graph/badge.svg)](https://codecov.io/gh/rmadeira/euromilhoes_analyzer)
+[![CI](https://github.com/ruimadeiraclaudino-beep/euromilhoes_analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/ruimadeiraclaudino-beep/euromilhoes_analyzer/actions/workflows/ci.yml)
+[![Docker](https://github.com/ruimadeiraclaudino-beep/euromilhoes_analyzer/actions/workflows/docker.yml/badge.svg)](https://github.com/ruimadeiraclaudino-beep/euromilhoes_analyzer/actions/workflows/docker.yml)
+[![codecov](https://codecov.io/gh/ruimadeiraclaudino-beep/euromilhoes_analyzer/branch/main/graph/badge.svg)](https://codecov.io/gh/ruimadeiraclaudino-beep/euromilhoes_analyzer)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![Django 4.2](https://img.shields.io/badge/django-4.2-green.svg)](https://www.djangoproject.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
