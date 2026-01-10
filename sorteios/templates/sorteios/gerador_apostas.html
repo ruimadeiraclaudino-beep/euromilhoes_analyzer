@@ -1,0 +1,133 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Gerador de Apostas - EuroMilhões Analyzer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-dice-5 me-2"></i>Gerador de Apostas</h1>
+
+<div class="row">
+    <div class="col-lg-5">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Configurações</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Estratégia</label>
+                        {% for value, label in estrategias %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="estrategia" 
+                                   id="estrategia_{{ value }}" value="{{ value }}"
+                                   {% if value == 'equilibrada' %}checked{% endif %}>
+                            <label class="form-check-label" for="estrategia_{{ value }}">
+                                {{ label }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quantidade" class="form-label">Quantidade de Apostas</label>
+                        <select class="form-select" name="quantidade" id="quantidade">
+                            {% for i in "12345" %}
+                            <option value="{{ i }}" {% if i == "1" %}selected{% endif %}>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-lightning me-2"></i>Gerar Apostas
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Sobre as Estratégias</h5>
+            </div>
+            <div class="card-body">
+                <dl>
+                    <dt>Baseada em Frequência</dt>
+                    <dd class="text-muted small">Favorece números que saem mais vezes.</dd>
+                    
+                    <dt>Distribuição Equilibrada</dt>
+                    <dd class="text-muted small">Equilibra pares/ímpares e baixos/altos.</dd>
+                    
+                    <dt>Aleatório Puro</dt>
+                    <dd class="text-muted small">Seleção completamente aleatória.</dd>
+                    
+                    <dt>Números Frios</dt>
+                    <dd class="text-muted small">Favorece números que saem menos.</dd>
+                    
+                    <dt>Estratégia Mista</dt>
+                    <dd class="text-muted small">Combina quentes, frios e atrasados.</dd>
+                </dl>
+                
+                <div class="alert alert-warning mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <small>
+                        <strong>Lembrete:</strong> Cada sorteio é independente. 
+                        Estas estratégias são apenas para análise e entretenimento.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Apostas Geradas</h5>
+            </div>
+            <div class="card-body">
+                {% if apostas_recentes %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Números</th>
+                                <th>Estrelas</th>
+                                <th>Estratégia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for aposta in apostas_recentes %}
+                            <tr>
+                                <td>
+                                    <small>{{ aposta.data_geracao|date:"d/m/Y H:i" }}</small>
+                                </td>
+                                <td>
+                                    {% for num in aposta.get_numeros %}
+                                        <span class="numero-ball small">{{ num|stringformat:"02d" }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% for est in aposta.get_estrelas %}
+                                        <span class="estrela-ball small">{{ est|stringformat:"02d" }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ aposta.get_estrategia_display }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-inbox fs-1"></i>
+                    <p class="mt-2">Nenhuma aposta gerada ainda.</p>
+                    <p>Use o formulário para gerar as suas apostas!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

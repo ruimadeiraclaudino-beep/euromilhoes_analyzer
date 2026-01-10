@@ -1,0 +1,23 @@
+[run]
+source = sorteios
+branch = True
+omit =
+    */migrations/*
+    */tests/*
+    */__init__.py
+    */admin.py
+    */apps.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+show_missing = True
+precision = 2
+
+[html]
+directory = htmlcov
+title = EuroMilhões Analyzer - Coverage Report

@@ -1,0 +1,80 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Estatísticas dos Números - EuroMilhões Analyzer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-123 me-2"></i>Estatísticas dos Números</h1>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col">
+                <h5 class="mb-0">Todos os 50 Números</h5>
+            </div>
+            <div class="col-auto">
+                <div class="btn-group" role="group">
+                    <a href="?ordem=numero" class="btn btn-sm {% if ordem == 'numero' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        Por Número
+                    </a>
+                    <a href="?ordem=frequencia" class="btn btn-sm {% if ordem == 'frequencia' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        Por Frequência
+                    </a>
+                    <a href="?ordem=dias_sem_sair" class="btn btn-sm {% if ordem == 'dias_sem_sair' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        Por Atraso
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>Número</th>
+                        <th>Frequência</th>
+                        <th>Percentagem</th>
+                        <th>Última Aparição</th>
+                        <th>Dias Sem Sair</th>
+                        <th>Gap Médio</th>
+                        <th>Gap Máximo</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in estatisticas %}
+                    <tr>
+                        <td>
+                            <span class="numero-ball small">{{ stat.numero|stringformat:"02d" }}</span>
+                        </td>
+                        <td><strong>{{ stat.frequencia }}</strong></td>
+                        <td>{{ stat.percentagem }}%</td>
+                        <td>{{ stat.ultima_aparicao|date:"d/m/Y"|default:"-" }}</td>
+                        <td>{{ stat.dias_sem_sair }} dias</td>
+                        <td>{{ stat.gap_medio|floatformat:1 }} dias</td>
+                        <td>{{ stat.gap_maximo }} dias</td>
+                        <td>
+                            <span class="status-{{ stat.status }}">
+                                {% if stat.status == 'quente' %}
+                                    <i class="bi bi-fire"></i> Quente
+                                {% elif stat.status == 'frio' %}
+                                    <i class="bi bi-snow"></i> Frio
+                                {% else %}
+                                    <i class="bi bi-dash"></i> Normal
+                                {% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            Sem estatísticas. Execute: <code>python manage.py atualizar_estatisticas</code>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+# Docker Compose para EuroMilhões Analyzer
+# 
+# Uso rápido (SQLite):
+#   docker-compose up -d web
+#
+# Uso com MySQL:
+#   docker-compose --profile mysql up -d
+#
+# Comandos úteis:
+#   docker-compose exec web python manage.py migrate
+#   docker-compose exec web python manage.py importar_sorteios --fonte csv --ficheiro dados_exemplo.csv --atualizar-stats
+#   docker-compose exec web python manage.py createsuperuser
+
+services:
+  web:
+    build: .
+    container_name: euromilhoes_web
+    ports:
+      - "8001:8000"  # Porta 8001 para não conflituar com InvestTracker
+    volumes:
+      - .:/app
+      - sqlite_data:/app/data
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=sqlite:///data/db.sqlite3
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    restart: unless-stopped
+
+  # MySQL - ativar com: docker-compose --profile mysql up -d
+  db:
+    image: mysql:8.0
+    container_name: euromilhoes_db
+    profiles:
+      - mysql
+    environment:
+      MYSQL_DATABASE: euromilhoes_db
+      MYSQL_ROOT_PASSWORD: euromilhoes_root_2024
+      MYSQL_USER: euromilhoes
+      MYSQL_PASSWORD: euromilhoes_pass_2024
+    ports:
+      - "3307:3306"  # 3307 para não conflitar com MySQL local
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Web com MySQL - ativar com: docker-compose --profile mysql up -d
+  web-mysql:
+    build: .
+    container_name: euromilhoes_web_mysql
+    profiles:
+      - mysql
+    ports:
+      - "8001:8000"  # Porta 8001 para não conflituar com InvestTracker
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=True
+      - DB_ENGINE=mysql
+      - DB_NAME=euromilhoes_db
+      - DB_USER=euromilhoes
+      - DB_PASSWORD=euromilhoes_pass_2024
+      - DB_HOST=db
+      - DB_PORT=3306
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "pip install mysqlclient &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    restart: unless-stopped
+
+volumes:
+  sqlite_data:
+  mysql_data:

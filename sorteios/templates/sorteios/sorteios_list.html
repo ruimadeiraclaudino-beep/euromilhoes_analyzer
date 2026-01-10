@@ -1,0 +1,94 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Histórico de Sorteios - EuroMilhões Analyzer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-calendar-event me-2"></i>Histórico de Sorteios</h1>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Concurso</th>
+                        <th>Números</th>
+                        <th>Estrelas</th>
+                        <th>Soma</th>
+                        <th>Par/Ímpar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sorteio in sorteios %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'sorteio_detail' sorteio.pk %}">
+                                {{ sorteio.data|date:"d/m/Y" }}
+                            </a>
+                        </td>
+                        <td>{{ sorteio.concurso|default:"-" }}</td>
+                        <td>
+                            {% for num in sorteio.get_numeros %}
+                                <span class="numero-ball small">{{ num|stringformat:"02d" }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% for est in sorteio.get_estrelas %}
+                                <span class="estrela-ball small">{{ est|stringformat:"02d" }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>{{ sorteio.soma_numeros }}</td>
+                        <td>
+                            {% with pi=sorteio.pares_impares %}
+                            {{ pi.0 }}P / {{ pi.1 }}I
+                            {% endwith %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Nenhum sorteio registado.
+                            <br>
+                            <small>Importe dados com: <code>python manage.py importar_sorteios</code></small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Paginação -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Paginação">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">&laquo; Primeira</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">
+                        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Última &raquo;</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

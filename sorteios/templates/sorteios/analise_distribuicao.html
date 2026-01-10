@@ -1,0 +1,182 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Análise de Distribuição - EuroMilhões Analyzer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-bar-chart me-2"></i>Análise de Distribuição</h1>
+
+<div class="row mb-4">
+    <!-- Somas -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-calculator me-2"></i>Soma dos Números</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h4 class="text-primary">{{ soma_min|default:"-" }}</h4>
+                        <small class="text-muted">Mínima</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-success">{{ soma_media|default:"-" }}</h4>
+                        <small class="text-muted">Média</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-danger">{{ soma_max|default:"-" }}</h4>
+                        <small class="text-muted">Máxima</small>
+                    </div>
+                </div>
+                <hr>
+                <p class="text-muted small mb-0">
+                    A soma ideal situa-se entre <strong>100 e 175</strong>, 
+                    que é o intervalo mais frequente nos sorteios históricos.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pares/Ímpares -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Pares vs Ímpares</h5>
+            </div>
+            <div class="card-body">
+                {% if pares_impares %}
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Distribuição</th>
+                            <th>Frequência</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dist, freq in pares_impares.items %}
+                        <tr>
+                            <td>{{ dist.0 }} Pares / {{ dist.1 }} Ímpares</td>
+                            <td><strong>{{ freq }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted text-center">Sem dados</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Baixos/Altos -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-arrow-down-up me-2"></i>Baixos vs Altos</h5>
+            </div>
+            <div class="card-body">
+                {% if baixos_altos %}
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Distribuição</th>
+                            <th>Frequência</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dist, freq in baixos_altos.items %}
+                        <tr>
+                            <td>{{ dist.0 }} Baixos / {{ dist.1 }} Altos</td>
+                            <td><strong>{{ freq }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <small class="text-muted">Baixos: 1-25 | Altos: 26-50</small>
+                {% else %}
+                <p class="text-muted text-center">Sem dados</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Combinações Frequentes -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-link-45deg me-2"></i>Pares Mais Frequentes</h5>
+            </div>
+            <div class="card-body">
+                {% if pares_frequentes %}
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Combinação</th>
+                            <th>Frequência</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for combo, freq in pares_frequentes %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <span class="numero-ball small">{{ combo.0|stringformat:"02d" }}</span>
+                                <span class="numero-ball small">{{ combo.1|stringformat:"02d" }}</span>
+                            </td>
+                            <td><strong>{{ freq }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted text-center py-4">Sem dados suficientes</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-diagram-2 me-2"></i>Trios Mais Frequentes</h5>
+            </div>
+            <div class="card-body">
+                {% if trios_frequentes %}
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Combinação</th>
+                            <th>Frequência</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for combo, freq in trios_frequentes %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <span class="numero-ball small">{{ combo.0|stringformat:"02d" }}</span>
+                                <span class="numero-ball small">{{ combo.1|stringformat:"02d" }}</span>
+                                <span class="numero-ball small">{{ combo.2|stringformat:"02d" }}</span>
+                            </td>
+                            <td><strong>{{ freq }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted text-center py-4">Sem dados suficientes</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info mt-4">
+    <i class="bi bi-lightbulb me-2"></i>
+    <strong>Dica:</strong> A distribuição mais comum é 2-3 pares e 2-3 números baixos. 
+    Apostas muito desequilibradas (ex: 5 pares ou 5 ímpares) são estatisticamente menos frequentes.
+</div>
+{% endblock %}

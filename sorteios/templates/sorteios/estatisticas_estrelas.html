@@ -1,0 +1,63 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Estatísticas das Estrelas - EuroMilhões Analyzer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-star me-2"></i>Estatísticas das Estrelas</h1>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Todas as 12 Estrelas</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>Estrela</th>
+                        <th>Frequência</th>
+                        <th>Percentagem</th>
+                        <th>Última Aparição</th>
+                        <th>Dias Sem Sair</th>
+                        <th>Gap Médio</th>
+                        <th>Gap Máximo</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in estatisticas %}
+                    <tr>
+                        <td>
+                            <span class="estrela-ball small">{{ stat.estrela|stringformat:"02d" }}</span>
+                        </td>
+                        <td><strong>{{ stat.frequencia }}</strong></td>
+                        <td>{{ stat.percentagem }}%</td>
+                        <td>{{ stat.ultima_aparicao|date:"d/m/Y"|default:"-" }}</td>
+                        <td>{{ stat.dias_sem_sair }} dias</td>
+                        <td>{{ stat.gap_medio|floatformat:1 }} dias</td>
+                        <td>{{ stat.gap_maximo }} dias</td>
+                        <td>
+                            <span class="status-{{ stat.status }}">
+                                {% if stat.status == 'quente' %}
+                                    <i class="bi bi-fire"></i> Quente
+                                {% elif stat.status == 'fria' %}
+                                    <i class="bi bi-snow"></i> Fria
+                                {% else %}
+                                    <i class="bi bi-dash"></i> Normal
+                                {% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            Sem estatísticas. Execute: <code>python manage.py atualizar_estatisticas</code>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Sorteio {{ sorteio.data|date:"d/m/Y" }} - EuroMilhões Analyzer{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'sorteios_list' %}">Sorteios</a></li>
+        <li class="breadcrumb-item active">{{ sorteio.data|date:"d/m/Y" }}</li>
+    </ol>
+</nav>
+
+<div class="card">
+    <div class="card-header">
+        <h4 class="mb-0">
+            <i class="bi bi-calendar-event me-2"></i>
+            Sorteio de {{ sorteio.data|date:"d \d\e F \d\e Y" }}
+            {% if sorteio.concurso %}
+                <span class="badge bg-secondary">Concurso {{ sorteio.concurso }}</span>
+            {% endif %}
+        </h4>
+    </div>
+    <div class="card-body">
+        <div class="text-center py-4">
+            <h5 class="text-muted mb-3">Números Sorteados</h5>
+            <div class="mb-4">
+                {% for num in sorteio.get_numeros %}
+                    <span class="numero-ball" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                        {{ num|stringformat:"02d" }}
+                    </span>
+                {% endfor %}
+                <span class="mx-3 fs-2 text-muted">+</span>
+                {% for est in sorteio.get_estrelas %}
+                    <span class="estrela-ball" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                        {{ est|stringformat:"02d" }}
+                    </span>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <hr>
+        
+        <div class="row text-center">
+            <div class="col-md-3">
+                <h6 class="text-muted">Soma dos Números</h6>
+                <h4>{{ sorteio.soma_numeros }}</h4>
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-muted">Pares / Ímpares</h6>
+                {% with pi=sorteio.pares_impares %}
+                <h4>{{ pi.0 }} / {{ pi.1 }}</h4>
+                {% endwith %}
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-muted">Baixos / Altos</h6>
+                {% with ba=sorteio.baixos_altos %}
+                <h4>{{ ba.0 }} / {{ ba.1 }}</h4>
+                {% endwith %}
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-muted">Soma das Estrelas</h6>
+                <h4>{{ sorteio.soma_estrelas }}</h4>
+            </div>
+        </div>
+        
+        {% if sorteio.jackpot %}
+        <hr>
+        <div class="text-center">
+            <h6 class="text-muted">Jackpot</h6>
+            <h3 class="text-success">€{{ sorteio.jackpot|floatformat:0|intcomma }}</h3>
+            {% if sorteio.houve_vencedor %}
+                <span class="badge bg-success fs-6">
+                    <i class="bi bi-trophy me-1"></i> Houve vencedor!
+                </span>
+            {% else %}
+                <span class="badge bg-secondary fs-6">Sem vencedor</span>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
