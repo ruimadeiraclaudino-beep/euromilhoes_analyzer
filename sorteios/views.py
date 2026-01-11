@@ -328,6 +328,9 @@ class GraficosAvancadosView(TemplateView):
     template_name = 'sorteios/graficos_avancados.html'
 
     def get_context_data(self, **kwargs):
+        import json
+        from collections import defaultdict
+
         context = super().get_context_data(**kwargs)
 
         # Dados para heatmap de frequencia por numero
@@ -335,14 +338,14 @@ class GraficosAvancadosView(TemplateView):
             EstatisticaNumero.objects.all().order_by('numero')
             .values('numero', 'frequencia', 'dias_sem_sair')
         )
-        context['estatisticas_numeros_json'] = estatisticas_numeros
+        context['estatisticas_numeros_json'] = json.dumps(estatisticas_numeros)
 
         # Dados para heatmap de estrelas
         estatisticas_estrelas = list(
             EstatisticaEstrela.objects.all().order_by('estrela')
             .values('estrela', 'frequencia', 'dias_sem_sair')
         )
-        context['estatisticas_estrelas_json'] = estatisticas_estrelas
+        context['estatisticas_estrelas_json'] = json.dumps(estatisticas_estrelas)
 
         # Dados para tendencias temporais (ultimos 100 sorteios)
         sorteios = Sorteio.objects.order_by('-data')[:100]
@@ -355,19 +358,20 @@ class GraficosAvancadosView(TemplateView):
                 'pares': sum(1 for n in sorteio.get_numeros() if n % 2 == 0),
                 'impares': sum(1 for n in sorteio.get_numeros() if n % 2 != 0),
             })
-        context['tendencias_json'] = tendencias
+        context['tendencias_json'] = json.dumps(tendencias)
 
         # Frequencia por ano
-        from django.db.models.functions import ExtractYear
-        from collections import defaultdict
-
         freq_por_ano = defaultdict(lambda: defaultdict(int))
         for sorteio in Sorteio.objects.all():
             ano = sorteio.data.year
             for num in sorteio.get_numeros():
                 freq_por_ano[ano][num] += 1
 
-        context['freq_por_ano_json'] = dict(freq_por_ano)
+        # Converter defaultdict para dict normal para JSON
+        freq_por_ano_dict = {
+            str(ano): dict(numeros) for ano, numeros in freq_por_ano.items()
+        }
+        context['freq_por_ano_json'] = json.dumps(freq_por_ano_dict)
 
         # Dados para grafico de evolucao de frequencia
         context['total_sorteios'] = Sorteio.objects.count()
