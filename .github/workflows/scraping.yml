@@ -2,6 +2,13 @@
 #
 # Executa diariamente as 22:00 UTC (23:00 Lisboa no inverno, 00:00 no verao)
 # Os sorteios sao as tercas e sextas-feiras as 21:00 Lisboa
+#
+# Para ativar notificacoes por email, configure os seguintes secrets:
+#   - SMTP_SERVER: servidor SMTP (ex: smtp.gmail.com)
+#   - SMTP_PORT: porta SMTP (ex: 587)
+#   - SMTP_USERNAME: email de envio
+#   - SMTP_PASSWORD: password ou app password
+#   - NOTIFICATION_EMAIL: email para receber notificacoes
 
 name: Scraping Agendado
 
@@ -48,14 +55,29 @@ jobs:
           OUTPUT=$(python manage.py atualizar_sorteios --dry-run 2>&1)
           echo "$OUTPUT"
 
+          # Guardar output para email
+          echo "output<<EOF" >> $GITHUB_OUTPUT
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
           # Extrair numero de novos sorteios
           if echo "$OUTPUT" | grep -q "Novos: 0"; then
             echo "has_new=false" >> $GITHUB_OUTPUT
             echo "new_count=0" >> $GITHUB_OUTPUT
+          elif echo "$OUTPUT" | grep -q "ja esta atualizada"; then
+            echo "has_new=false" >> $GITHUB_OUTPUT
+            echo "new_count=0" >> $GITHUB_OUTPUT
           else
-            NEW_COUNT=$(echo "$OUTPUT" | grep -oP "Novos: \K\d+")
+            NEW_COUNT=$(echo "$OUTPUT" | grep -oP "Novos: \K\d+" || echo "0")
+            if [ -z "$NEW_COUNT" ]; then
+              NEW_COUNT="0"
+            fi
             echo "has_new=true" >> $GITHUB_OUTPUT
             echo "new_count=$NEW_COUNT" >> $GITHUB_OUTPUT
+
+            # Extrair ultimo sorteio para o email
+            LAST_DRAW=$(echo "$OUTPUT" | grep -oP "\d{4}-\d{2}-\d{2}: \[[^\]]+\] \+ \[[^\]]+\]" | head -1 || echo "")
+            echo "last_draw=$LAST_DRAW" >> $GITHUB_OUTPUT
           fi
 
       - name: Import new draws
@@ -64,12 +86,105 @@ jobs:
           python manage.py atualizar_sorteios --no-stats
           echo "Importados ${{ steps.check.outputs.new_count }} novos sorteios!"
 
+      - name: Send email notification
+        if: steps.check.outputs.has_new == 'true' && vars.NOTIFICATION_EMAIL != ''
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "EuroMilhoes - ${{ steps.check.outputs.new_count }} novo(s) sorteio(s)!"
+          to: ${{ vars.NOTIFICATION_EMAIL }}
+          from: EuroMilhoes Analyzer <${{ secrets.SMTP_USERNAME }}>
+          html_body: |
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .header { background: #1a365d; color: white; padding: 20px; text-align: center; }
+                .content { padding: 20px; }
+                .draw-box { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin: 15px 0; }
+                .numbers { font-size: 24px; font-weight: bold; color: #2b6cb0; }
+                .stars { font-size: 24px; font-weight: bold; color: #d69e2e; }
+                .footer { background: #f7fafc; padding: 15px; text-align: center; font-size: 12px; color: #718096; }
+                a { color: #2b6cb0; }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <h1>EuroMilhoes Analyzer</h1>
+                <p>Novos resultados disponiveis!</p>
+              </div>
+              <div class="content">
+                <p>Foram encontrados <strong>${{ steps.check.outputs.new_count }}</strong> novo(s) sorteio(s).</p>
+
+                <div class="draw-box">
+                  <h3>Ultimo Sorteio</h3>
+                  <p>${{ steps.check.outputs.last_draw }}</p>
+                </div>
+
+                <p>
+                  <a href="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}">
+                    Ver detalhes completos
+                  </a>
+                </p>
+              </div>
+              <div class="footer">
+                <p>
+                  Fonte: <a href="https://www.euro-millions.com/pt">euro-millions.com/pt</a><br>
+                  <em>Joga com responsabilidade!</em>
+                </p>
+              </div>
+            </body>
+            </html>
+
+      - name: Create GitHub Issue for new draws
+        if: steps.check.outputs.has_new == 'true' && github.event.inputs.dry_run != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const newCount = '${{ steps.check.outputs.new_count }}';
+            const lastDraw = '${{ steps.check.outputs.last_draw }}';
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            // Check if issue already exists for today
+            const today = new Date().toISOString().split('T')[0];
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'novo-sorteio',
+              state: 'open'
+            });
+
+            const existingIssue = issues.data.find(issue =>
+              issue.title.includes(today)
+            );
+
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `Novo(s) sorteio(s) - ${today}`,
+                body: `## Novos Resultados EuroMilhoes\n\n` +
+                      `**${newCount}** novo(s) sorteio(s) encontrado(s).\n\n` +
+                      `### Ultimo Sorteio\n\`${lastDraw}\`\n\n` +
+                      `[Ver detalhes do workflow](${runUrl})\n\n` +
+                      `---\n` +
+                      `*Gerado automaticamente pelo workflow de scraping*`,
+                labels: ['novo-sorteio', 'automatico']
+              });
+            }
+
       - name: Summary
         run: |
           echo "## Resultado do Scraping" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.check.outputs.has_new }}" == "true" ]; then
             echo "**${{ steps.check.outputs.new_count }} novo(s) sorteio(s) encontrado(s)**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Ultimo sorteio: \`${{ steps.check.outputs.last_draw }}\`" >> $GITHUB_STEP_SUMMARY
             if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
               echo "" >> $GITHUB_STEP_SUMMARY
               echo "_Modo dry-run: nenhum dado foi gravado_" >> $GITHUB_STEP_SUMMARY

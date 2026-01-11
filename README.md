@@ -208,6 +208,27 @@ docker-compose logs -f cron
 O workflow `scraping.yml` executa automaticamente todos os dias as 22:00 UTC.
 Tambem pode ser executado manualmente em Actions > Scraping Agendado > Run workflow.
 
+**Notificacoes por Email:**
+
+Para receber emails quando novos sorteios sao encontrados, configura os seguintes secrets no repositorio (Settings > Secrets and variables > Actions):
+
+| Secret | Descricao | Exemplo |
+|--------|-----------|---------|
+| `SMTP_SERVER` | Servidor SMTP | `smtp.gmail.com` |
+| `SMTP_PORT` | Porta SMTP | `587` |
+| `SMTP_USERNAME` | Email de envio | `teu@gmail.com` |
+| `SMTP_PASSWORD` | Password/App Password | `xxxx xxxx xxxx xxxx` |
+
+E a seguinte variavel (Settings > Secrets and variables > Actions > Variables):
+
+| Variable | Descricao | Exemplo |
+|----------|-----------|---------|
+| `NOTIFICATION_EMAIL` | Email destino | `teu@email.com` |
+
+> **Nota Gmail:** Usa uma [App Password](https://support.google.com/accounts/answer/185833) em vez da password normal.
+
+Alem do email, o workflow tambem cria automaticamente uma **GitHub Issue** com label `novo-sorteio` quando novos resultados sao encontrados.
+
 ## Atualizar Estatisticas
 
 Apos importar novos sorteios:
@@ -423,6 +444,8 @@ docker pull ghcr.io/ruimadeiraclaudino-beep/euromilhoes_analyzer:latest
 - Suporte para importar ano especifico ou historico completo
 - Modo dry-run para preview
 - Tarefa agendada diaria (Docker cron + GitHub Actions)
+- Notificacoes por email quando novos sorteios encontrados
+- Criacao automatica de GitHub Issues para novos resultados
 - Correcao de serializacao JSON nos graficos avancados
 - 20 novos testes para scraping (total: 112)
 
@@ -444,10 +467,10 @@ docker pull ghcr.io/ruimadeiraclaudino-beep/euromilhoes_analyzer:latest
 
 ## Proximos Passos Sugeridos
 
-1. Implementar notificacoes de novos resultados (email/push)
-2. Criar modo de comparacao de estrategias
-3. Exportar apostas para PDF
-4. App mobile (React Native / Flutter)
+1. Criar modo de comparacao de estrategias
+2. Exportar apostas para PDF
+3. App mobile (React Native / Flutter)
+4. Notificacoes push (Telegram/Discord bot)
 
 ---
 
