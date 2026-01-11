@@ -340,7 +340,7 @@ curl http://localhost:8001/api/padroes/
 
 ## Testes
 
-A aplicacao inclui **92 testes** automatizados com cobertura de codigo.
+A aplicacao inclui **112 testes** automatizados com cobertura de codigo.
 
 ```bash
 # Executar testes
@@ -362,7 +362,8 @@ sorteios/tests/
 ├── test_api_estatisticas.py # Testes API estatisticas
 ├── test_api_apostas.py      # Testes API apostas
 ├── test_auth.py             # Testes autenticacao
-└── test_padroes_ml.py       # Testes padroes, ML e graficos (v2.0)
+├── test_padroes_ml.py       # Testes padroes, ML e graficos (v2.0)
+└── test_scraping.py         # Testes web scraping (v2.1)
 ```
 
 ## CI/CD
@@ -393,7 +394,7 @@ docker pull ghcr.io/ruimadeiraclaudino-beep/euromilhoes_analyzer:latest
 - **Frontend**: Bootstrap 5, Chart.js
 - **BD**: SQLite (dev) / MySQL (prod)
 - **Analise**: NumPy, Pandas, SciPy
-- **Testes**: Django Test, Coverage (92 testes)
+- **Testes**: Django Test, Coverage (112 testes)
 - **CI/CD**: GitHub Actions, Docker
 
 ## Changelog
@@ -404,6 +405,7 @@ docker pull ghcr.io/ruimadeiraclaudino-beep/euromilhoes_analyzer:latest
 - Suporte para importar ano especifico ou historico completo
 - Modo dry-run para preview
 - Correcao de serializacao JSON nos graficos avancados
+- 20 novos testes para scraping (total: 112)
 
 ### v2.0.0 (2025)
 - Analise de padroes (consecutivos, dezenas, terminacoes, sequencias)
