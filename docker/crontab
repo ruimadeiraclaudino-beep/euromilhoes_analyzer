@@ -1,0 +1,7 @@
+# Crontab para EuroMilhoes Analyzer
+# Executa o scraping todos os dias as 22:00 (apos sorteios de terca e sexta)
+
+# Atualizar sorteios diariamente as 22:00 UTC
+0 22 * * * cd /app && python manage.py atualizar_sorteios >> /var/log/cron.log 2>&1
+
+# Linha vazia no final e obrigatoria

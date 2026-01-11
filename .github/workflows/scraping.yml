@@ -1,0 +1,81 @@
+# Workflow para scraping agendado dos resultados do EuroMilhoes
+#
+# Executa diariamente as 22:00 UTC (23:00 Lisboa no inverno, 00:00 no verao)
+# Os sorteios sao as tercas e sextas-feiras as 21:00 Lisboa
+
+name: Scraping Agendado
+
+on:
+  schedule:
+    # Todos os dias as 22:00 UTC
+    - cron: '0 22 * * *'
+
+  # Permite execucao manual
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Executar em modo dry-run (sem gravar)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  scrape:
+    name: Atualizar Sorteios
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run migrations
+        run: |
+          python manage.py migrate
+
+      - name: Check for new draws (dry-run)
+        id: check
+        run: |
+          OUTPUT=$(python manage.py atualizar_sorteios --dry-run 2>&1)
+          echo "$OUTPUT"
+
+          # Extrair numero de novos sorteios
+          if echo "$OUTPUT" | grep -q "Novos: 0"; then
+            echo "has_new=false" >> $GITHUB_OUTPUT
+            echo "new_count=0" >> $GITHUB_OUTPUT
+          else
+            NEW_COUNT=$(echo "$OUTPUT" | grep -oP "Novos: \K\d+")
+            echo "has_new=true" >> $GITHUB_OUTPUT
+            echo "new_count=$NEW_COUNT" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Import new draws
+        if: steps.check.outputs.has_new == 'true' && github.event.inputs.dry_run != 'true'
+        run: |
+          python manage.py atualizar_sorteios --no-stats
+          echo "Importados ${{ steps.check.outputs.new_count }} novos sorteios!"
+
+      - name: Summary
+        run: |
+          echo "## Resultado do Scraping" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check.outputs.has_new }}" == "true" ]; then
+            echo "**${{ steps.check.outputs.new_count }} novo(s) sorteio(s) encontrado(s)**" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "_Modo dry-run: nenhum dado foi gravado_" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "Nenhum novo sorteio encontrado. Base de dados atualizada." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Fonte: [euro-millions.com/pt](https://www.euro-millions.com/pt)" >> $GITHUB_STEP_SUMMARY

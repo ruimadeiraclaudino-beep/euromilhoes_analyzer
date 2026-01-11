@@ -191,6 +191,23 @@ python manage.py atualizar_sorteios --no-stats
 
 **Fonte:** [euro-millions.com/pt](https://www.euro-millions.com/pt) (versao portuguesa)
 
+### Atualizacao Automatica Agendada
+
+**Opcao A: Docker com Cron**
+
+```bash
+# Iniciar servico de cron (executa diariamente as 22:00 UTC)
+docker-compose --profile cron up -d
+
+# Ver logs do cron
+docker-compose logs -f cron
+```
+
+**Opcao B: GitHub Actions**
+
+O workflow `scraping.yml` executa automaticamente todos os dias as 22:00 UTC.
+Tambem pode ser executado manualmente em Actions > Scraping Agendado > Run workflow.
+
 ## Atualizar Estatisticas
 
 Apos importar novos sorteios:
@@ -381,6 +398,7 @@ O projeto usa GitHub Actions para integracao continua:
 | `ci.yml` | push, PR | Testes, coverage, linting |
 | `docker.yml` | push main, tags | Build e push de imagens |
 | `release.yml` | tags v* | Criacao de releases |
+| `scraping.yml` | diario 22:00 UTC | Scraping automatico de sorteios |
 
 ### Docker Image
 
@@ -404,6 +422,7 @@ docker pull ghcr.io/ruimadeiraclaudino-beep/euromilhoes_analyzer:latest
 - Fonte portuguesa (euro-millions.com/pt)
 - Suporte para importar ano especifico ou historico completo
 - Modo dry-run para preview
+- Tarefa agendada diaria (Docker cron + GitHub Actions)
 - Correcao de serializacao JSON nos graficos avancados
 - 20 novos testes para scraping (total: 112)
 
@@ -425,11 +444,10 @@ docker pull ghcr.io/ruimadeiraclaudino-beep/euromilhoes_analyzer:latest
 
 ## Proximos Passos Sugeridos
 
-1. Implementar notificacoes de novos resultados
+1. Implementar notificacoes de novos resultados (email/push)
 2. Criar modo de comparacao de estrategias
 3. Exportar apostas para PDF
 4. App mobile (React Native / Flutter)
-5. Agendamento automatico de atualizacoes (cron/celery)
 
 ---
 

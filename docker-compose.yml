@@ -28,6 +28,26 @@ services:
              python manage.py runserver 0.0.0.0:8000"
     restart: unless-stopped
 
+  # Cron - tarefa agendada para scraping diario
+  # Ativar com: docker-compose --profile cron up -d
+  cron:
+    build: .
+    container_name: euromilhoes_cron
+    profiles:
+      - cron
+    volumes:
+      - .:/app
+      - sqlite_data:/app/data
+      - ./docker/crontab:/etc/cron.d/euromilhoes-cron:ro
+      - ./docker/entrypoint-cron.sh:/entrypoint-cron.sh:ro
+    environment:
+      - DEBUG=False
+      - DATABASE_URL=sqlite:///data/db.sqlite3
+    entrypoint: ["/bin/sh", "/entrypoint-cron.sh"]
+    restart: unless-stopped
+    depends_on:
+      - web
+
   # MySQL - ativar com: docker-compose --profile mysql up -d
   db:
     image: mysql:8.0
