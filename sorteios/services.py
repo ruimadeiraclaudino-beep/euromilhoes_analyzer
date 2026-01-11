@@ -240,6 +240,210 @@ class AnalisadorEstatistico:
         
         return combinacoes.most_common(20)
 
+    def analisar_numeros_consecutivos(self) -> Dict:
+        """
+        Analisa a ocorrência de números consecutivos nos sorteios.
+
+        Returns:
+            Dict com estatísticas de consecutivos
+        """
+        contagem_consecutivos = Counter()
+        sorteios_com_consecutivos = 0
+        exemplos = []
+
+        for sorteio in self.sorteios:
+            numeros = sorted(sorteio.get_numeros())
+            consecutivos = 0
+            pares_consecutivos = []
+
+            for i in range(len(numeros) - 1):
+                if numeros[i + 1] - numeros[i] == 1:
+                    consecutivos += 1
+                    pares_consecutivos.append((numeros[i], numeros[i + 1]))
+
+            if consecutivos > 0:
+                sorteios_com_consecutivos += 1
+                contagem_consecutivos[consecutivos] += 1
+                if len(exemplos) < 5:
+                    exemplos.append({
+                        'data': sorteio.data,
+                        'numeros': numeros,
+                        'consecutivos': pares_consecutivos
+                    })
+
+        percentagem = (sorteios_com_consecutivos / self.total_sorteios * 100) if self.total_sorteios > 0 else 0
+
+        return {
+            'total_com_consecutivos': sorteios_com_consecutivos,
+            'percentagem': round(percentagem, 2),
+            'distribuicao': dict(contagem_consecutivos),
+            'exemplos': exemplos
+        }
+
+    def analisar_dezenas(self) -> Dict:
+        """
+        Analisa a distribuição por dezenas (1-10, 11-20, 21-30, 31-40, 41-50).
+
+        Returns:
+            Dict com contagem por dezena e padrões mais comuns
+        """
+        dezenas_counter = Counter()
+        padroes_dezenas = Counter()
+
+        for sorteio in self.sorteios:
+            numeros = sorteio.get_numeros()
+            dezenas = []
+
+            for num in numeros:
+                if num <= 10:
+                    dezena = 1
+                elif num <= 20:
+                    dezena = 2
+                elif num <= 30:
+                    dezena = 3
+                elif num <= 40:
+                    dezena = 4
+                else:
+                    dezena = 5
+                dezenas.append(dezena)
+                dezenas_counter[dezena] += 1
+
+            # Padrão de dezenas (ex: "1-2-3-4-5" significa 1 número de cada dezena)
+            padrao = tuple(sorted(Counter(dezenas).items()))
+            padroes_dezenas[padrao] += 1
+
+        return {
+            'frequencia_dezenas': dict(dezenas_counter),
+            'padroes_comuns': padroes_dezenas.most_common(10)
+        }
+
+    def analisar_terminacoes(self) -> Dict:
+        """
+        Analisa a distribuição por terminações (último dígito).
+
+        Returns:
+            Dict com contagem por terminação e padrões
+        """
+        terminacoes_counter = Counter()
+        terminacoes_repetidas = Counter()
+
+        for sorteio in self.sorteios:
+            numeros = sorteio.get_numeros()
+            terminacoes = [num % 10 for num in numeros]
+
+            for term in terminacoes:
+                terminacoes_counter[term] += 1
+
+            # Verificar terminações repetidas
+            term_count = Counter(terminacoes)
+            repetidas = sum(1 for c in term_count.values() if c > 1)
+            terminacoes_repetidas[repetidas] += 1
+
+        return {
+            'frequencia_terminacoes': dict(sorted(terminacoes_counter.items())),
+            'terminacoes_repetidas': dict(terminacoes_repetidas)
+        }
+
+    def analisar_sequencias(self, tamanho: int = 3) -> List[Tuple]:
+        """
+        Encontra sequências de números consecutivos que mais aparecem.
+
+        Args:
+            tamanho: Tamanho da sequência (2, 3, etc.)
+
+        Returns:
+            Lista de (sequência, frequência)
+        """
+        sequencias = Counter()
+
+        for sorteio in self.sorteios:
+            numeros = sorted(sorteio.get_numeros())
+
+            # Procurar sequências consecutivas
+            for i in range(len(numeros) - tamanho + 1):
+                subsequencia = numeros[i:i + tamanho]
+                # Verificar se é consecutiva
+                if all(subsequencia[j + 1] - subsequencia[j] == 1 for j in range(len(subsequencia) - 1)):
+                    sequencias[tuple(subsequencia)] += 1
+
+        return sequencias.most_common(15)
+
+    def analisar_soma_tendencias(self, ultimos_n: int = 50) -> Dict:
+        """
+        Analisa tendências nas somas dos últimos N sorteios.
+
+        Args:
+            ultimos_n: Número de sorteios a analisar
+
+        Returns:
+            Dict com média, tendência e faixas
+        """
+        sorteios_recentes = list(self.sorteios.order_by('-data')[:ultimos_n])
+
+        if not sorteios_recentes:
+            return {'erro': 'Sem dados suficientes'}
+
+        somas = [s.soma_numeros() for s in sorteios_recentes]
+        somas_estrelas = [s.soma_estrelas() for s in sorteios_recentes]
+
+        # Calcular faixas
+        faixas = {
+            'muito_baixa': (21, 95),
+            'baixa': (96, 115),
+            'media': (116, 145),
+            'alta': (146, 175),
+            'muito_alta': (176, 255)
+        }
+
+        distribuicao_faixas = Counter()
+        for soma in somas:
+            for nome, (min_val, max_val) in faixas.items():
+                if min_val <= soma <= max_val:
+                    distribuicao_faixas[nome] += 1
+                    break
+
+        # Tendência (subindo ou descendo)
+        primeira_metade = somas[:len(somas)//2]
+        segunda_metade = somas[len(somas)//2:]
+
+        media_primeira = sum(primeira_metade) / len(primeira_metade) if primeira_metade else 0
+        media_segunda = sum(segunda_metade) / len(segunda_metade) if segunda_metade else 0
+
+        if media_segunda > media_primeira * 1.05:
+            tendencia = 'subindo'
+        elif media_segunda < media_primeira * 0.95:
+            tendencia = 'descendo'
+        else:
+            tendencia = 'estavel'
+
+        return {
+            'media_numeros': round(sum(somas) / len(somas), 1),
+            'media_estrelas': round(sum(somas_estrelas) / len(somas_estrelas), 1),
+            'min_soma': min(somas),
+            'max_soma': max(somas),
+            'tendencia': tendencia,
+            'distribuicao_faixas': dict(distribuicao_faixas),
+            'ultimas_somas': somas[:10]
+        }
+
+    def get_analise_padroes_completa(self) -> Dict:
+        """
+        Retorna análise completa de padrões.
+
+        Returns:
+            Dict com todas as análises de padrões
+        """
+        return {
+            'combinacoes_pares': self.combinacoes_frequentes(2),
+            'combinacoes_trios': self.combinacoes_frequentes(3),
+            'consecutivos': self.analisar_numeros_consecutivos(),
+            'dezenas': self.analisar_dezenas(),
+            'terminacoes': self.analisar_terminacoes(),
+            'sequencias': self.analisar_sequencias(2),
+            'tendencias_soma': self.analisar_soma_tendencias(50),
+            'total_sorteios': self.total_sorteios
+        }
+
 
 class GeradorApostas:
     """

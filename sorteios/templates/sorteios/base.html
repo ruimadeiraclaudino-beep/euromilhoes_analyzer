@@ -1,37 +1,62 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}EuroMilhões Analyzer{% endblock %}</title>
-    
+    <title>{% block title %}EuroMilhoes Analyzer{% endblock %}</title>
+
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <style>
         :root {
             --euromilhoes-gold: #FFD700;
             --euromilhoes-blue: #003399;
             --euromilhoes-dark: #1a1a2e;
+            --bg-primary: #f8f9fa;
+            --bg-sidebar: #fff;
+            --text-primary: #333;
+            --card-bg: #fff;
+            --border-color: #dee2e6;
         }
-        
+
+        [data-bs-theme="dark"] {
+            --bg-primary: #1a1a2e;
+            --bg-sidebar: #16213e;
+            --text-primary: #e0e0e0;
+            --card-bg: #16213e;
+            --border-color: #2d3748;
+            --euromilhoes-blue: #4d79ff;
+        }
+
         body {
-            background-color: #f8f9fa;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
         }
-        
+
         .navbar {
             background: linear-gradient(135deg, var(--euromilhoes-blue), var(--euromilhoes-dark));
         }
-        
+
+        .card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+        }
+
         .card-header {
             background: linear-gradient(135deg, var(--euromilhoes-blue), #0044cc);
             color: white;
         }
-        
+
+        [data-bs-theme="dark"] .card-header {
+            background: linear-gradient(135deg, #2d4a8c, #1a365d);
+        }
+
         .numero-ball {
             display: inline-flex;
             align-items: center;
@@ -46,7 +71,13 @@
             margin: 2px;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
         }
-        
+
+        [data-bs-theme="dark"] .numero-ball {
+            background: linear-gradient(145deg, #2d3748, #1a202c);
+            color: #60a5fa;
+            border-color: #60a5fa;
+        }
+
         .estrela-ball {
             display: inline-flex;
             align-items: center;
@@ -61,76 +92,161 @@
             margin: 2px;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
         }
-        
+
+        [data-bs-theme="dark"] .estrela-ball {
+            background: linear-gradient(145deg, #b8860b, #daa520);
+            color: #1a1a2e;
+        }
+
         .numero-ball.small, .estrela-ball.small {
             width: 32px;
             height: 32px;
             font-size: 0.85rem;
         }
-        
+
         .stat-card {
             transition: transform 0.2s;
         }
-        
+
         .stat-card:hover {
             transform: translateY(-5px);
         }
-        
+
         .status-quente {
             color: #dc3545;
             font-weight: bold;
         }
-        
+
         .status-frio {
             color: #0d6efd;
             font-weight: bold;
         }
-        
+
         .status-normal {
             color: #6c757d;
         }
-        
+
+        .table {
+            color: var(--text-primary);
+        }
+
         .table-hover tbody tr:hover {
             background-color: rgba(0, 51, 153, 0.05);
         }
-        
+
+        [data-bs-theme="dark"] .table-hover tbody tr:hover {
+            background-color: rgba(96, 165, 250, 0.1);
+        }
+
         .progress-bar-quente {
             background-color: #dc3545;
         }
-        
+
         .progress-bar-frio {
             background-color: #0d6efd;
         }
-        
+
         .sidebar {
             min-height: calc(100vh - 56px);
-            background-color: #fff;
+            background-color: var(--bg-sidebar);
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            transition: background-color 0.3s;
         }
-        
+
         .sidebar .nav-link {
-            color: #333;
+            color: var(--text-primary);
             padding: 0.75rem 1rem;
             border-radius: 0.25rem;
             margin: 0.25rem 0;
+            transition: all 0.2s;
         }
-        
+
         .sidebar .nav-link:hover,
         .sidebar .nav-link.active {
             background-color: var(--euromilhoes-blue);
             color: white;
         }
-        
+
         .sidebar .nav-link i {
             margin-right: 0.5rem;
         }
-        
+
         footer {
             background-color: var(--euromilhoes-dark);
             color: #ccc;
         }
+
+        .theme-toggle {
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        .list-group-item {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .bg-light {
+            background-color: var(--card-bg) !important;
+        }
+
+        [data-bs-theme="dark"] .bg-light {
+            background-color: #1e293b !important;
+        }
+
+        .form-control, .form-select {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        [data-bs-theme="dark"] .form-control:focus,
+        [data-bs-theme="dark"] .form-select:focus {
+            background-color: #1e293b;
+            border-color: #60a5fa;
+            color: var(--text-primary);
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        .alert-info {
+            background-color: rgba(13, 110, 253, 0.1);
+            border-color: rgba(13, 110, 253, 0.2);
+        }
+
+        [data-bs-theme="dark"] .alert-info {
+            background-color: rgba(96, 165, 250, 0.1);
+            border-color: rgba(96, 165, 250, 0.2);
+            color: #93c5fd;
+        }
+
+        [data-bs-theme="dark"] .alert-warning {
+            background-color: rgba(251, 191, 36, 0.1);
+            border-color: rgba(251, 191, 36, 0.2);
+            color: #fcd34d;
+        }
+
+        [data-bs-theme="dark"] .alert-danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        [data-bs-theme="dark"] .text-muted {
+            color: #9ca3af !important;
+        }
     </style>
-    
+
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -138,13 +254,13 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'dashboard' %}">
-                <i class="bi bi-stars me-2"></i>EuroMilhões Analyzer
+                <i class="bi bi-stars me-2"></i>EuroMilhoes Analyzer
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'dashboard' %}">
                             <i class="bi bi-speedometer2"></i> Dashboard
@@ -156,49 +272,71 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="{% url 'graficos_avancados' %}">
+                            <i class="bi bi-graph-up"></i> Graficos
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="{% url 'gerador_apostas' %}">
                             <i class="bi bi-dice-5"></i> Gerador
                         </a>
+                    </li>
+                    <li class="nav-item ms-2">
+                        <span class="theme-toggle text-white" id="themeToggle" title="Alternar tema">
+                            <i class="bi bi-moon-fill" id="themeIcon"></i>
+                        </span>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
-    
+
     <!-- Main Content -->
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 d-md-block sidebar collapse py-3">
                 <nav class="nav flex-column">
-                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
                        href="{% url 'dashboard' %}">
                         <i class="bi bi-speedometer2"></i> Dashboard
                     </a>
-                    <a class="nav-link {% if request.resolver_match.url_name == 'sorteios_list' %}active{% endif %}" 
+                    <a class="nav-link {% if request.resolver_match.url_name == 'sorteios_list' %}active{% endif %}"
                        href="{% url 'sorteios_list' %}">
-                        <i class="bi bi-calendar-event"></i> Histórico
+                        <i class="bi bi-calendar-event"></i> Historico
                     </a>
-                    <a class="nav-link {% if request.resolver_match.url_name == 'estatisticas_numeros' %}active{% endif %}" 
+                    <a class="nav-link {% if request.resolver_match.url_name == 'estatisticas_numeros' %}active{% endif %}"
                        href="{% url 'estatisticas_numeros' %}">
-                        <i class="bi bi-123"></i> Números
+                        <i class="bi bi-123"></i> Numeros
                     </a>
-                    <a class="nav-link {% if request.resolver_match.url_name == 'estatisticas_estrelas' %}active{% endif %}" 
+                    <a class="nav-link {% if request.resolver_match.url_name == 'estatisticas_estrelas' %}active{% endif %}"
                        href="{% url 'estatisticas_estrelas' %}">
                         <i class="bi bi-star"></i> Estrelas
                     </a>
-                    <a class="nav-link {% if request.resolver_match.url_name == 'analise_distribuicao' %}active{% endif %}" 
+                    <a class="nav-link {% if request.resolver_match.url_name == 'analise_distribuicao' %}active{% endif %}"
                        href="{% url 'analise_distribuicao' %}">
-                        <i class="bi bi-bar-chart"></i> Análise
+                        <i class="bi bi-bar-chart"></i> Distribuicao
+                    </a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'analise_padroes' %}active{% endif %}"
+                       href="{% url 'analise_padroes' %}">
+                        <i class="bi bi-grid-3x3"></i> Padroes
+                    </a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'graficos_avancados' %}active{% endif %}"
+                       href="{% url 'graficos_avancados' %}">
+                        <i class="bi bi-graph-up"></i> Graficos
+                    </a>
+                    <a class="nav-link {% if request.resolver_match.url_name == 'previsao_ml' %}active{% endif %}"
+                       href="{% url 'previsao_ml' %}">
+                        <i class="bi bi-cpu"></i> Previsao ML
                     </a>
                     <hr>
-                    <a class="nav-link {% if request.resolver_match.url_name == 'gerador_apostas' %}active{% endif %}" 
+                    <a class="nav-link {% if request.resolver_match.url_name == 'gerador_apostas' %}active{% endif %}"
                        href="{% url 'gerador_apostas' %}">
                         <i class="bi bi-dice-5"></i> Gerador de Apostas
                     </a>
                 </nav>
             </div>
-            
+
             <!-- Page Content -->
             <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
                 {% if messages %}
@@ -209,28 +347,61 @@
                         </div>
                     {% endfor %}
                 {% endif %}
-                
+
                 {% block content %}{% endblock %}
             </main>
         </div>
     </div>
-    
+
     <!-- Footer -->
     <footer class="py-3 mt-4">
         <div class="container text-center">
             <small>
-                EuroMilhões Analyzer &copy; 2024 | 
+                EuroMilhoes Analyzer &copy; 2024 |
                 <span class="text-warning">
-                    <i class="bi bi-exclamation-triangle"></i> 
-                    Análise estatística para fins educacionais. Jogo responsável.
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Analise estatistica para fins educacionais. Jogo responsavel.
                 </span>
             </small>
         </div>
     </footer>
-    
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+
+    <!-- Theme Toggle Script -->
+    <script>
+        (function() {
+            const html = document.documentElement;
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+
+            // Check for saved theme preference or default to light
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            html.setAttribute('data-bs-theme', savedTheme);
+            updateIcon(savedTheme);
+
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = html.getAttribute('data-bs-theme');
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+                html.setAttribute('data-bs-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateIcon(newTheme);
+            });
+
+            function updateIcon(theme) {
+                if (theme === 'dark') {
+                    themeIcon.classList.remove('bi-moon-fill');
+                    themeIcon.classList.add('bi-sun-fill');
+                } else {
+                    themeIcon.classList.remove('bi-sun-fill');
+                    themeIcon.classList.add('bi-moon-fill');
+                }
+            }
+        })();
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,0 +1,329 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Previsao ML - EuroMilhoes Analyzer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-cpu me-2"></i>Previsao ML (Experimental)</h1>
+    <span class="badge bg-warning text-dark">
+        <i class="bi bi-exclamation-triangle me-1"></i>Experimental
+    </span>
+</div>
+
+<div class="alert alert-warning mb-4">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>Aviso Importante:</strong> Este modulo e puramente experimental e educacional.
+    Cada sorteio do EuroMilhoes e um evento <strong>independente e completamente aleatorio</strong>.
+    Nenhum algoritmo de machine learning pode prever com precisao os numeros vencedores de uma loteria.
+    Os resultados apresentados sao baseados em analise estatistica e nao devem ser usados como base para apostas.
+</div>
+
+<!-- Previsoes por Estrategia -->
+<div class="row mb-4">
+    <div class="col-md-6 mb-3">
+        <div class="card h-100 border-primary">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-balance-scale me-2"></i>Estrategia Equilibrada
+                <span class="badge bg-light text-primary float-end">Recomendada</span>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="mb-2">
+                        <strong>Numeros:</strong><br>
+                        {% for num in previsao_equilibrada.numeros %}
+                        <span class="numero-ball">{{ num }}</span>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <strong>Estrelas:</strong><br>
+                        {% for est in previsao_equilibrada.estrelas %}
+                        <span class="estrela-ball">{{ est }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar bg-info" role="progressbar"
+                         style="width: {{ previsao_equilibrada.confianca }}%">
+                        Confianca: {{ previsao_equilibrada.confianca }}%
+                    </div>
+                </div>
+                <small class="text-muted">Equilibra frequencia, tendencia e atraso</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-fire me-2"></i>Estrategia Frequencia
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="mb-2">
+                        <strong>Numeros:</strong><br>
+                        {% for num in previsao_frequencia.numeros %}
+                        <span class="numero-ball">{{ num }}</span>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <strong>Estrelas:</strong><br>
+                        {% for est in previsao_frequencia.estrelas %}
+                        <span class="estrela-ball">{{ est }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar bg-danger" role="progressbar"
+                         style="width: {{ previsao_frequencia.confianca }}%">
+                        Confianca: {{ previsao_frequencia.confianca }}%
+                    </div>
+                </div>
+                <small class="text-muted">Favorece numeros mais frequentes</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-clock-history me-2"></i>Estrategia Atraso
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="mb-2">
+                        <strong>Numeros:</strong><br>
+                        {% for num in previsao_atraso.numeros %}
+                        <span class="numero-ball">{{ num }}</span>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <strong>Estrelas:</strong><br>
+                        {% for est in previsao_atraso.estrelas %}
+                        <span class="estrela-ball">{{ est }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar bg-warning" role="progressbar"
+                         style="width: {{ previsao_atraso.confianca }}%">
+                        Confianca: {{ previsao_atraso.confianca }}%
+                    </div>
+                </div>
+                <small class="text-muted">Favorece numeros que ha mais tempo nao saem</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-graph-up-arrow me-2"></i>Estrategia Tendencia
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="mb-2">
+                        <strong>Numeros:</strong><br>
+                        {% for num in previsao_tendencia.numeros %}
+                        <span class="numero-ball">{{ num }}</span>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <strong>Estrelas:</strong><br>
+                        {% for est in previsao_tendencia.estrelas %}
+                        <span class="estrela-ball">{{ est }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar bg-success" role="progressbar"
+                         style="width: {{ previsao_tendencia.confianca }}%">
+                        Confianca: {{ previsao_tendencia.confianca }}%
+                    </div>
+                </div>
+                <small class="text-muted">Favorece numeros com tendencia recente positiva</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Ranking de Numeros -->
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-trophy me-2"></i>Ranking de Numeros (Top 15)
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Numero</th>
+                                <th>Score</th>
+                                <th>Frequencia</th>
+                                <th>Sem Sair</th>
+                                <th>Tendencia</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in ranking_numeros %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td><span class="numero-ball small">{{ item.numero }}</span></td>
+                                <td>
+                                    <div class="progress" style="height: 15px; width: 80px;">
+                                        <div class="progress-bar" style="width: {% widthratio item.score 1 100 %}%"></div>
+                                    </div>
+                                </td>
+                                <td>{{ item.frequencia }}</td>
+                                <td>{{ item.sorteios_sem_sair }}</td>
+                                <td>
+                                    {% if item.tendencia > 0 %}
+                                    <span class="text-success"><i class="bi bi-arrow-up"></i></span>
+                                    {% elif item.tendencia < 0 %}
+                                    <span class="text-danger"><i class="bi bi-arrow-down"></i></span>
+                                    {% else %}
+                                    <span class="text-secondary"><i class="bi bi-arrow-right"></i></span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.quente %}
+                                    <span class="badge bg-danger">Quente</span>
+                                    {% endif %}
+                                    {% if item.atrasado %}
+                                    <span class="badge bg-warning text-dark">Atrasado</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="bi bi-star me-2"></i>Ranking de Estrelas
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Estrela</th>
+                            <th>Score</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in ranking_estrelas %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td><span class="estrela-ball small">{{ item.estrela }}</span></td>
+                            <td>
+                                <div class="progress" style="height: 15px; width: 60px;">
+                                    <div class="progress-bar bg-warning" style="width: {% widthratio item.score 1 100 %}%"></div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if item.quente %}
+                                <span class="badge bg-danger">Q</span>
+                                {% endif %}
+                                {% if item.atrasado %}
+                                <span class="badge bg-warning text-dark">A</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Precisao Historica -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-clipboard-data me-2"></i>Precisao Historica
+            </div>
+            <div class="card-body">
+                {% if precisao.erro %}
+                <p class="text-muted">{{ precisao.erro }}</p>
+                {% else %}
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Sorteios analisados</span>
+                        <strong>{{ precisao.sorteios_analisados }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Media acertos (Top 5)</span>
+                        <strong>{{ precisao.media_acertos_top5 }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Esperado por acaso</span>
+                        <strong>{{ precisao.esperado_acaso_top5 }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Melhoria %</span>
+                        <strong class="{% if precisao.melhoria_percentual_top5 > 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ precisao.melhoria_percentual_top5 }}%
+                        </strong>
+                    </li>
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Metodologia -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-book me-2"></i>Como Funciona
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Fatores Considerados:</h6>
+                <ul>
+                    <li><strong>Frequencia Historica:</strong> Quantas vezes cada numero apareceu</li>
+                    <li><strong>Tendencia Recente:</strong> Se o numero esta a sair mais ou menos nos ultimos sorteios</li>
+                    <li><strong>Atraso:</strong> Ha quantos sorteios o numero nao aparece</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6>Limitacoes:</h6>
+                <ul>
+                    <li>Loteria e um jogo de <strong>puro acaso</strong></li>
+                    <li>Cada sorteio e <strong>independente</strong> dos anteriores</li>
+                    <li>Os numeros nao tem "memoria"</li>
+                    <li>Este modelo e apenas para <strong>fins educacionais</strong></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-danger">
+    <i class="bi bi-x-octagon me-2"></i>
+    <strong>Lembre-se:</strong> Jogar na loteria deve ser visto como entretenimento, nao como investimento.
+    Jogue com responsabilidade e nunca aposte mais do que pode perder.
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Atualizar previsoes via AJAX
+function atualizarPrevisao(estrategia) {
+    fetch(`/api/ml/previsao/?estrategia=${estrategia}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Nova previsao:', data);
+        });
+}
+</script>
+{% endblock %}

@@ -9,6 +9,7 @@ from django.contrib import messages
 
 from .models import Sorteio, EstatisticaNumero, EstatisticaEstrela, ApostaGerada
 from .services import AnalisadorEstatistico, GeradorApostas
+from .ml import PrevisaoML
 
 
 class DashboardView(TemplateView):
@@ -192,13 +193,260 @@ def api_evolucao_numero(request, numero):
 def api_gerar_aposta(request):
     """API endpoint para gerar uma aposta."""
     estrategia = request.GET.get('estrategia', 'aleatorio')
-    
+
     gerador = GeradorApostas()
     aposta = gerador.gerar_e_guardar(estrategia)
-    
+
     return JsonResponse({
         'id': aposta.id,
         'numeros': aposta.get_numeros(),
         'estrelas': aposta.get_estrelas(),
         'estrategia': aposta.get_estrategia_display(),
     })
+
+
+class AnalisePadroesView(TemplateView):
+    """Vista para analise de padroes nos sorteios."""
+    template_name = 'sorteios/analise_padroes.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        analisador = AnalisadorEstatistico()
+        padroes = analisador.get_analise_padroes_completa()
+
+        context['total_sorteios'] = padroes['total_sorteios']
+        context['combinacoes_pares'] = padroes['combinacoes_pares'][:10]
+        context['combinacoes_trios'] = padroes['combinacoes_trios'][:10]
+        context['consecutivos'] = padroes['consecutivos']
+        context['dezenas'] = padroes['dezenas']
+        context['terminacoes'] = padroes['terminacoes']
+        context['sequencias'] = padroes['sequencias'][:10]
+        context['tendencias'] = padroes['tendencias_soma']
+
+        return context
+
+
+class PrevisaoMLView(TemplateView):
+    """Vista para previsoes ML (experimental)."""
+    template_name = 'sorteios/previsao_ml.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        ml = PrevisaoML()
+        analise = ml.get_analise_completa()
+
+        context['previsao_equilibrada'] = analise['previsao_equilibrada']
+        context['previsao_frequencia'] = analise['previsao_frequencia']
+        context['previsao_atraso'] = analise['previsao_atraso']
+        context['previsao_tendencia'] = analise['previsao_tendencia']
+        context['ranking_numeros'] = analise['ranking_numeros']
+        context['ranking_estrelas'] = analise['ranking_estrelas']
+        context['precisao'] = analise['precisao_historica']
+        context['total_sorteios'] = analise['total_sorteios']
+
+        return context
+
+
+# API endpoints para padroes e ML
+
+def api_padroes(request):
+    """API endpoint para analise de padroes."""
+    analisador = AnalisadorEstatistico()
+    padroes = analisador.get_analise_padroes_completa()
+
+    # Converter tuplas para listas para JSON
+    result = {
+        'total_sorteios': padroes['total_sorteios'],
+        'combinacoes_pares': [
+            {'numeros': list(combo), 'frequencia': freq}
+            for combo, freq in padroes['combinacoes_pares']
+        ],
+        'combinacoes_trios': [
+            {'numeros': list(combo), 'frequencia': freq}
+            for combo, freq in padroes['combinacoes_trios']
+        ],
+        'consecutivos': padroes['consecutivos'],
+        'dezenas': padroes['dezenas'],
+        'terminacoes': padroes['terminacoes'],
+        'sequencias': [
+            {'numeros': list(seq), 'frequencia': freq}
+            for seq, freq in padroes['sequencias']
+        ],
+        'tendencias_soma': padroes['tendencias_soma']
+    }
+
+    # Converter datas para strings
+    if 'exemplos' in result['consecutivos']:
+        for ex in result['consecutivos']['exemplos']:
+            ex['data'] = ex['data'].isoformat()
+
+    # Converter padroes de dezenas
+    if 'padroes_comuns' in result['dezenas']:
+        result['dezenas']['padroes_comuns'] = [
+            {'padrao': list(p), 'frequencia': f}
+            for p, f in result['dezenas']['padroes_comuns']
+        ]
+
+    return JsonResponse(result)
+
+
+def api_previsao_ml(request):
+    """API endpoint para previsao ML."""
+    estrategia = request.GET.get('estrategia', 'equilibrada')
+
+    ml = PrevisaoML()
+    previsao = ml.prever_proximos_numeros(estrategia)
+
+    return JsonResponse(previsao)
+
+
+def api_ranking_ml(request):
+    """API endpoint para ranking ML de numeros e estrelas."""
+    ml = PrevisaoML()
+
+    return JsonResponse({
+        'numeros': ml.get_ranking_numeros(),
+        'estrelas': ml.get_ranking_estrelas()
+    })
+
+
+def api_precisao_ml(request):
+    """API endpoint para analise de precisao do modelo."""
+    janela = int(request.GET.get('janela', 50))
+    janela = min(max(janela, 20), 200)  # Limitar entre 20 e 200
+
+    ml = PrevisaoML()
+    precisao = ml.analisar_precisao_historica(janela)
+
+    return JsonResponse(precisao)
+
+
+class GraficosAvancadosView(TemplateView):
+    """Vista para graficos avancados com heatmaps e tendencias."""
+    template_name = 'sorteios/graficos_avancados.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Dados para heatmap de frequencia por numero
+        estatisticas_numeros = list(
+            EstatisticaNumero.objects.all().order_by('numero')
+            .values('numero', 'frequencia', 'dias_sem_sair')
+        )
+        context['estatisticas_numeros_json'] = estatisticas_numeros
+
+        # Dados para heatmap de estrelas
+        estatisticas_estrelas = list(
+            EstatisticaEstrela.objects.all().order_by('estrela')
+            .values('estrela', 'frequencia', 'dias_sem_sair')
+        )
+        context['estatisticas_estrelas_json'] = estatisticas_estrelas
+
+        # Dados para tendencias temporais (ultimos 100 sorteios)
+        sorteios = Sorteio.objects.order_by('-data')[:100]
+        tendencias = []
+        for sorteio in reversed(list(sorteios)):
+            tendencias.append({
+                'data': sorteio.data.isoformat(),
+                'soma': sorteio.soma_numeros(),
+                'soma_estrelas': sorteio.soma_estrelas(),
+                'pares': sum(1 for n in sorteio.get_numeros() if n % 2 == 0),
+                'impares': sum(1 for n in sorteio.get_numeros() if n % 2 != 0),
+            })
+        context['tendencias_json'] = tendencias
+
+        # Frequencia por ano
+        from django.db.models.functions import ExtractYear
+        from collections import defaultdict
+
+        freq_por_ano = defaultdict(lambda: defaultdict(int))
+        for sorteio in Sorteio.objects.all():
+            ano = sorteio.data.year
+            for num in sorteio.get_numeros():
+                freq_por_ano[ano][num] += 1
+
+        context['freq_por_ano_json'] = dict(freq_por_ano)
+
+        # Dados para grafico de evolucao de frequencia
+        context['total_sorteios'] = Sorteio.objects.count()
+
+        return context
+
+
+def api_evolucao_frequencia(request):
+    """API endpoint para evolucao de frequencia ao longo do tempo."""
+    numero = int(request.GET.get('numero', 1))
+    sorteios = Sorteio.objects.order_by('data')
+
+    dados = []
+    frequencia_acumulada = 0
+    total = 0
+
+    for sorteio in sorteios:
+        total += 1
+        if numero in sorteio.get_numeros():
+            frequencia_acumulada += 1
+
+        # Registrar a cada 50 sorteios para nao sobrecarregar
+        if total % 50 == 0 or total == sorteios.count():
+            dados.append({
+                'sorteio': total,
+                'data': sorteio.data.isoformat(),
+                'frequencia': frequencia_acumulada,
+                'percentagem': round(frequencia_acumulada / total * 100, 2)
+            })
+
+    return JsonResponse({'numero': numero, 'dados': dados})
+
+
+def api_heatmap_mensal(request):
+    """API endpoint para heatmap de frequencia mensal."""
+    from collections import defaultdict
+
+    # Estrutura: {ano: {mes: {numero: frequencia}}}
+    dados = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+
+    for sorteio in Sorteio.objects.all():
+        ano = sorteio.data.year
+        mes = sorteio.data.month
+        for num in sorteio.get_numeros():
+            dados[ano][mes][num] += 1
+
+    # Converter para formato serializavel
+    resultado = {}
+    for ano, meses in dados.items():
+        resultado[ano] = {}
+        for mes, numeros in meses.items():
+            resultado[ano][mes] = dict(numeros)
+
+    return JsonResponse(resultado)
+
+
+def api_correlacao_numeros(request):
+    """API endpoint para matriz de correlacao entre numeros."""
+    from collections import defaultdict
+
+    # Contar co-ocorrencias
+    co_ocorrencias = defaultdict(lambda: defaultdict(int))
+
+    for sorteio in Sorteio.objects.all():
+        numeros = sorteio.get_numeros()
+        for i, n1 in enumerate(numeros):
+            for n2 in numeros[i+1:]:
+                co_ocorrencias[n1][n2] += 1
+                co_ocorrencias[n2][n1] += 1
+
+    # Converter para matriz
+    matriz = []
+    for i in range(1, 51):
+        linha = []
+        for j in range(1, 51):
+            if i == j:
+                linha.append(0)
+            else:
+                linha.append(co_ocorrencias[i].get(j, 0))
+        matriz.append(linha)
+
+    return JsonResponse({'matriz': matriz, 'labels': list(range(1, 51))})

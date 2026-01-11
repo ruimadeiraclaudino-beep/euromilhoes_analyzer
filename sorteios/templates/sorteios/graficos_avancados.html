@@ -1,0 +1,597 @@
+{% extends 'sorteios/base.html' %}
+{% load static %}
+
+{% block title %}Graficos Avancados - EuroMilhoes Analyzer{% endblock %}
+
+{% block extra_css %}
+<style>
+    .heatmap-grid {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 3px;
+    }
+
+    .heatmap-cell {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: bold;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .heatmap-cell:hover {
+        transform: scale(1.1);
+        z-index: 10;
+    }
+
+    .estrelas-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 5px;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 15px;
+    }
+
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 3px;
+        margin-right: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-graph-up me-2"></i>Graficos Avancados</h1>
+    <span class="badge bg-primary">{{ total_sorteios }} sorteios</span>
+</div>
+
+<!-- Heatmap de Frequencia de Numeros -->
+<div class="row mb-4">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-grid-3x3-gap me-2"></i>Heatmap de Frequencia - Numeros
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">
+                    Cores indicam a frequencia de cada numero (vermelho = mais frequente, azul = menos frequente)
+                </p>
+                <div class="heatmap-grid" id="heatmapNumeros"></div>
+                <div class="mt-3">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #3b82f6;"></div>
+                        <small>Frio</small>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #22c55e;"></div>
+                        <small>Normal</small>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f59e0b;"></div>
+                        <small>Quente</small>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ef4444;"></div>
+                        <small>Muito Quente</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-star me-2"></i>Heatmap - Estrelas
+            </div>
+            <div class="card-body">
+                <div class="estrelas-grid" id="heatmapEstrelas"></div>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <i class="bi bi-clock-history me-2"></i>Dias sem Sair
+            </div>
+            <div class="card-body">
+                <div class="heatmap-grid" id="heatmapAtraso"></div>
+                <div class="mt-3">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #22c55e;"></div>
+                        <small>Recente</small>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ef4444;"></div>
+                        <small>Atrasado</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tendencias Temporais -->
+<div class="row mb-4">
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-graph-up-arrow me-2"></i>Tendencia de Somas (Ultimos 100 sorteios)
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="chartSomas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-pie-chart me-2"></i>Pares vs Impares (Ultimos 100)
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="chartParesImpares"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-bar-chart me-2"></i>Distribuicao de Somas
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="chartDistribuicaoSomas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Evolucao de Frequencia -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-activity me-2"></i>Evolucao de Frequencia por Numero
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Selecione os numeros para comparar:</label>
+                        <select id="selectNumeros" class="form-select" multiple size="5">
+                            {% for i in "12345678901234567890123456789012345678901234567890"|make_list %}
+                            {% with forloop.counter as num %}
+                            {% if num <= 50 %}
+                            <option value="{{ num }}" {% if num == 1 or num == 23 or num == 50 %}selected{% endif %}>Numero {{ num }}</option>
+                            {% endif %}
+                            {% endwith %}
+                            {% endfor %}
+                        </select>
+                        <button class="btn btn-primary mt-2" onclick="atualizarGraficoEvolucao()">
+                            <i class="bi bi-arrow-repeat me-1"></i>Atualizar
+                        </button>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="chart-container" style="height: 350px;">
+                            <canvas id="chartEvolucao"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Frequencia por Ano -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-calendar3 me-2"></i>Frequencia por Ano (Top 10 numeros)
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 400px;">
+                    <canvas id="chartFreqAno"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>Nota:</strong> Estes graficos sao ferramentas de visualizacao para analise exploratoria.
+    Os padroes observados nao garantem resultados futuros.
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Dados do servidor
+const estatisticasNumeros = {{ estatisticas_numeros_json|safe }};
+const estatisticasEstrelas = {{ estatisticas_estrelas_json|safe }};
+const tendencias = {{ tendencias_json|safe }};
+const freqPorAno = {{ freq_por_ano_json|safe }};
+
+// Funcao para obter cor baseada na frequencia
+function getColorByFrequency(freq, min, max) {
+    const ratio = (freq - min) / (max - min);
+    if (ratio < 0.25) return '#3b82f6'; // Azul - frio
+    if (ratio < 0.5) return '#22c55e';  // Verde - normal
+    if (ratio < 0.75) return '#f59e0b'; // Amarelo - quente
+    return '#ef4444'; // Vermelho - muito quente
+}
+
+function getColorByDelay(dias, max) {
+    const ratio = dias / max;
+    if (ratio < 0.3) return '#22c55e';
+    if (ratio < 0.6) return '#f59e0b';
+    return '#ef4444';
+}
+
+// Criar Heatmap de Numeros
+function criarHeatmapNumeros() {
+    const container = document.getElementById('heatmapNumeros');
+    const freqs = estatisticasNumeros.map(e => e.frequencia);
+    const minFreq = Math.min(...freqs);
+    const maxFreq = Math.max(...freqs);
+
+    container.innerHTML = '';
+    for (let i = 1; i <= 50; i++) {
+        const stat = estatisticasNumeros.find(e => e.numero === i) || {frequencia: 0};
+        const cell = document.createElement('div');
+        cell.className = 'heatmap-cell';
+        cell.style.backgroundColor = getColorByFrequency(stat.frequencia, minFreq, maxFreq);
+        cell.style.color = stat.frequencia > (maxFreq - minFreq) / 2 + minFreq ? '#fff' : '#000';
+        cell.textContent = i;
+        cell.title = `Numero ${i}: ${stat.frequencia} vezes`;
+        container.appendChild(cell);
+    }
+}
+
+// Criar Heatmap de Estrelas
+function criarHeatmapEstrelas() {
+    const container = document.getElementById('heatmapEstrelas');
+    const freqs = estatisticasEstrelas.map(e => e.frequencia);
+    const minFreq = Math.min(...freqs);
+    const maxFreq = Math.max(...freqs);
+
+    container.innerHTML = '';
+    for (let i = 1; i <= 12; i++) {
+        const stat = estatisticasEstrelas.find(e => e.estrela === i) || {frequencia: 0};
+        const cell = document.createElement('div');
+        cell.className = 'heatmap-cell estrela-ball';
+        cell.style.background = getColorByFrequency(stat.frequencia, minFreq, maxFreq);
+        cell.style.color = '#fff';
+        cell.textContent = i;
+        cell.title = `Estrela ${i}: ${stat.frequencia} vezes`;
+        container.appendChild(cell);
+    }
+}
+
+// Criar Heatmap de Atraso
+function criarHeatmapAtraso() {
+    const container = document.getElementById('heatmapAtraso');
+    const delays = estatisticasNumeros.map(e => e.dias_sem_sair);
+    const maxDelay = Math.max(...delays);
+
+    container.innerHTML = '';
+    for (let i = 1; i <= 50; i++) {
+        const stat = estatisticasNumeros.find(e => e.numero === i) || {dias_sem_sair: 0};
+        const cell = document.createElement('div');
+        cell.className = 'heatmap-cell';
+        cell.style.backgroundColor = getColorByDelay(stat.dias_sem_sair, maxDelay);
+        cell.style.color = '#fff';
+        cell.textContent = i;
+        cell.title = `Numero ${i}: ${stat.dias_sem_sair} dias sem sair`;
+        container.appendChild(cell);
+    }
+}
+
+// Grafico de Somas
+function criarGraficoSomas() {
+    const ctx = document.getElementById('chartSomas').getContext('2d');
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: tendencias.map(t => t.data),
+            datasets: [{
+                label: 'Soma dos Numeros',
+                data: tendencias.map(t => t.soma),
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.3
+            }, {
+                label: 'Media (138)',
+                data: tendencias.map(() => 138),
+                borderColor: '#ef4444',
+                borderDash: [5, 5],
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: isDark ? '#e0e0e0' : '#333' }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: isDark ? '#e0e0e0' : '#333',
+                        maxTicksLimit: 10
+                    },
+                    grid: { color: isDark ? '#374151' : '#e5e7eb' }
+                },
+                y: {
+                    ticks: { color: isDark ? '#e0e0e0' : '#333' },
+                    grid: { color: isDark ? '#374151' : '#e5e7eb' }
+                }
+            }
+        }
+    });
+}
+
+// Grafico Pares vs Impares
+function criarGraficoParesImpares() {
+    const ctx = document.getElementById('chartParesImpares').getContext('2d');
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: tendencias.map(t => t.data),
+            datasets: [{
+                label: 'Pares',
+                data: tendencias.map(t => t.pares),
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                fill: true
+            }, {
+                label: 'Impares',
+                data: tendencias.map(t => t.impares),
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: isDark ? '#e0e0e0' : '#333' }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: {
+                        color: isDark ? '#e0e0e0' : '#333',
+                        maxTicksLimit: 10
+                    },
+                    grid: { color: isDark ? '#374151' : '#e5e7eb' }
+                },
+                y: {
+                    min: 0,
+                    max: 5,
+                    ticks: { color: isDark ? '#e0e0e0' : '#333' },
+                    grid: { color: isDark ? '#374151' : '#e5e7eb' }
+                }
+            }
+        }
+    });
+}
+
+// Grafico de Distribuicao de Somas
+function criarGraficoDistribuicaoSomas() {
+    const ctx = document.getElementById('chartDistribuicaoSomas').getContext('2d');
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+
+    // Criar bins para histograma
+    const bins = {};
+    const binSize = 20;
+    tendencias.forEach(t => {
+        const bin = Math.floor(t.soma / binSize) * binSize;
+        bins[bin] = (bins[bin] || 0) + 1;
+    });
+
+    const labels = Object.keys(bins).sort((a, b) => a - b).map(b => `${b}-${parseInt(b) + binSize - 1}`);
+    const data = Object.keys(bins).sort((a, b) => a - b).map(b => bins[b]);
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Frequencia',
+                data: data,
+                backgroundColor: '#3b82f6',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    ticks: { color: isDark ? '#e0e0e0' : '#333' },
+                    grid: { display: false }
+                },
+                y: {
+                    ticks: { color: isDark ? '#e0e0e0' : '#333' },
+                    grid: { color: isDark ? '#374151' : '#e5e7eb' }
+                }
+            }
+        }
+    });
+}
+
+// Grafico de Frequencia por Ano
+function criarGraficoFreqAno() {
+    const ctx = document.getElementById('chartFreqAno').getContext('2d');
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+
+    const anos = Object.keys(freqPorAno).sort();
+
+    // Encontrar top 10 numeros mais frequentes no total
+    const totalPorNumero = {};
+    for (let i = 1; i <= 50; i++) {
+        totalPorNumero[i] = 0;
+        anos.forEach(ano => {
+            totalPorNumero[i] += (freqPorAno[ano][i] || 0);
+        });
+    }
+
+    const top10 = Object.entries(totalPorNumero)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([num, _]) => parseInt(num));
+
+    const cores = [
+        '#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#8b5cf6',
+        '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'
+    ];
+
+    const datasets = top10.map((num, idx) => ({
+        label: `Numero ${num}`,
+        data: anos.map(ano => freqPorAno[ano][num] || 0),
+        borderColor: cores[idx],
+        backgroundColor: cores[idx] + '20',
+        tension: 0.3
+    }));
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: anos,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { color: isDark ? '#e0e0e0' : '#333' }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: isDark ? '#e0e0e0' : '#333' },
+                    grid: { color: isDark ? '#374151' : '#e5e7eb' }
+                },
+                y: {
+                    ticks: { color: isDark ? '#e0e0e0' : '#333' },
+                    grid: { color: isDark ? '#374151' : '#e5e7eb' }
+                }
+            }
+        }
+    });
+}
+
+// Grafico de Evolucao
+let chartEvolucao = null;
+
+async function atualizarGraficoEvolucao() {
+    const select = document.getElementById('selectNumeros');
+    const numeros = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+
+    if (numeros.length === 0) {
+        alert('Selecione pelo menos um numero');
+        return;
+    }
+
+    const ctx = document.getElementById('chartEvolucao').getContext('2d');
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+
+    const cores = ['#ef4444', '#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6'];
+    const datasets = [];
+
+    for (let i = 0; i < numeros.length; i++) {
+        const response = await fetch(`/api/graficos/evolucao/?numero=${numeros[i]}`);
+        const data = await response.json();
+
+        datasets.push({
+            label: `Numero ${numeros[i]}`,
+            data: data.dados.map(d => ({x: d.sorteio, y: d.percentagem})),
+            borderColor: cores[i % cores.length],
+            tension: 0.3,
+            pointRadius: 2
+        });
+    }
+
+    if (chartEvolucao) {
+        chartEvolucao.destroy();
+    }
+
+    chartEvolucao = new Chart(ctx, {
+        type: 'line',
+        data: { datasets: datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: isDark ? '#e0e0e0' : '#333' }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    title: { display: true, text: 'Sorteio', color: isDark ? '#e0e0e0' : '#333' },
+                    ticks: { color: isDark ? '#e0e0e0' : '#333' },
+                    grid: { color: isDark ? '#374151' : '#e5e7eb' }
+                },
+                y: {
+                    title: { display: true, text: 'Frequencia (%)', color: isDark ? '#e0e0e0' : '#333' },
+                    ticks: { color: isDark ? '#e0e0e0' : '#333' },
+                    grid: { color: isDark ? '#374151' : '#e5e7eb' }
+                }
+            }
+        }
+    });
+}
+
+// Inicializar
+document.addEventListener('DOMContentLoaded', function() {
+    criarHeatmapNumeros();
+    criarHeatmapEstrelas();
+    criarHeatmapAtraso();
+    criarGraficoSomas();
+    criarGraficoParesImpares();
+    criarGraficoDistribuicaoSomas();
+    criarGraficoFreqAno();
+    atualizarGraficoEvolucao();
+});
+</script>
+{% endblock %}

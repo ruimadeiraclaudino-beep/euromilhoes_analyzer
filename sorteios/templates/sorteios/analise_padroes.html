@@ -1,0 +1,298 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Analise de Padroes - EuroMilhoes Analyzer{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="bi bi-grid-3x3 me-2"></i>Analise de Padroes</h1>
+    <span class="badge bg-primary">{{ total_sorteios }} sorteios analisados</span>
+</div>
+
+<div class="row">
+    <!-- Combinacoes Mais Frequentes -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-people me-2"></i>Pares Mais Frequentes
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Numeros</th>
+                            <th>Vezes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for combo, freq in combinacoes_pares %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                {% for num in combo %}
+                                <span class="numero-ball small">{{ num }}</span>
+                                {% endfor %}
+                            </td>
+                            <td><strong>{{ freq }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-diagram-3 me-2"></i>Trios Mais Frequentes
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Numeros</th>
+                            <th>Vezes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for combo, freq in combinacoes_trios %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                {% for num in combo %}
+                                <span class="numero-ball small">{{ num }}</span>
+                                {% endfor %}
+                            </td>
+                            <td><strong>{{ freq }}</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Numeros Consecutivos -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-arrow-right me-2"></i>Numeros Consecutivos
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ consecutivos.total_com_consecutivos }}</h3>
+                                <small class="text-muted">Sorteios com consecutivos</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h3 class="mb-0">{{ consecutivos.percentagem }}%</h3>
+                                <small class="text-muted">Do total</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h6>Distribuicao:</h6>
+                <ul class="list-group list-group-flush">
+                    {% for qtd, vezes in consecutivos.distribuicao.items %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ qtd }} par(es) consecutivo(s)
+                        <span class="badge bg-primary rounded-pill">{{ vezes }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sequencias Consecutivas -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-list-ol me-2"></i>Sequencias Consecutivas
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Sequencias de 2 numeros consecutivos mais comuns:</p>
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Sequencia</th>
+                            <th>Vezes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for seq, freq in sequencias %}
+                        <tr>
+                            <td>
+                                {% for num in seq %}
+                                <span class="numero-ball small">{{ num }}</span>
+                                {% endfor %}
+                            </td>
+                            <td><strong>{{ freq }}</strong></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="text-center text-muted">Sem dados</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Distribuicao por Dezenas -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-bar-chart-steps me-2"></i>Distribuicao por Dezenas
+            </div>
+            <div class="card-body">
+                <p class="text-muted small">Frequencia de numeros por dezena:</p>
+                {% for dezena, freq in dezenas.frequencia_dezenas.items %}
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span>
+                            {% if dezena == 1 %}1-10
+                            {% elif dezena == 2 %}11-20
+                            {% elif dezena == 3 %}21-30
+                            {% elif dezena == 4 %}31-40
+                            {% else %}41-50{% endif %}
+                        </span>
+                        <span class="fw-bold">{{ freq }}</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar" role="progressbar"
+                             style="width: {% widthratio freq total_sorteios 20 %}%"
+                             aria-valuenow="{{ freq }}" aria-valuemin="0" aria-valuemax="{{ total_sorteios }}">
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Terminacoes -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-hash me-2"></i>Terminacoes (Ultimo Digito)
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for term, freq in terminacoes.frequencia_terminacoes.items %}
+                    <div class="col-6 col-md-4 mb-2">
+                        <div class="card bg-light">
+                            <div class="card-body text-center py-2">
+                                <span class="numero-ball small">{{ term }}</span>
+                                <div class="mt-1"><strong>{{ freq }}</strong></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <hr>
+                <h6>Terminacoes Repetidas:</h6>
+                <ul class="list-group list-group-flush">
+                    {% for qtd, vezes in terminacoes.terminacoes_repetidas.items %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ qtd }} terminacao(oes) repetida(s)
+                        <span class="badge bg-secondary rounded-pill">{{ vezes }} sorteios</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Tendencias de Soma -->
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-graph-up me-2"></i>Tendencias de Soma (Ultimos 50 sorteios)
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0">{{ tendencias.media_numeros }}</h4>
+                                <small class="text-muted">Media da soma</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0">{{ tendencias.min_soma }} - {{ tendencias.max_soma }}</h4>
+                                <small class="text-muted">Intervalo</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0">
+                                    {% if tendencias.tendencia == 'subindo' %}
+                                    <i class="bi bi-arrow-up text-success"></i>
+                                    {% elif tendencias.tendencia == 'descendo' %}
+                                    <i class="bi bi-arrow-down text-danger"></i>
+                                    {% else %}
+                                    <i class="bi bi-arrow-right text-secondary"></i>
+                                    {% endif %}
+                                    {{ tendencias.tendencia|capfirst }}
+                                </h4>
+                                <small class="text-muted">Tendencia</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body text-center">
+                                <h4 class="mb-0">{{ tendencias.media_estrelas }}</h4>
+                                <small class="text-muted">Media soma estrelas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h6>Distribuicao por Faixa de Soma:</h6>
+                <div class="row">
+                    {% for faixa, qtd in tendencias.distribuicao_faixas.items %}
+                    <div class="col">
+                        <div class="card text-center">
+                            <div class="card-body py-2">
+                                <div class="fw-bold">{{ qtd }}</div>
+                                <small class="text-muted">{{ faixa|title }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>Nota:</strong> Estes padroes sao baseados em dados historicos e nao garantem resultados futuros.
+    Cada sorteio e um evento independente e aleatorio.
+</div>
+{% endblock %}
