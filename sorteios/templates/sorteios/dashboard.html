@@ -285,26 +285,25 @@ new Chart(ctxNumeros, {
 // Gráfico de Estrelas
 const ctxEstrelas = document.getElementById('chartEstrelas').getContext('2d');
 new Chart(ctxEstrelas, {
-    type: 'doughnut',
+    type: 'bar',
     data: {
         labels: {{ estrelas_labels|safe }},
         datasets: [{
+            label: 'Frequência',
             data: {{ estrelas_frequencias|safe }},
-            backgroundColor: [
-                '#FFD700', '#FFC107', '#FFB300', '#FFA000',
-                '#FF8F00', '#FF6F00', '#F57C00', '#EF6C00',
-                '#E65100', '#DD2C00', '#D50000', '#C51162'
-            ]
+            backgroundColor: 'rgba(255, 193, 7, 0.7)',
+            borderColor: 'rgba(255, 193, 7, 1)',
+            borderWidth: 1
         }]
     },
     options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: {
-                position: 'right',
-                labels: { boxWidth: 15 }
-            }
+            legend: { display: false }
+        },
+        scales: {
+            y: { beginAtZero: true }
         }
     }
 });

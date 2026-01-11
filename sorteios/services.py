@@ -10,7 +10,7 @@ from typing import List, Tuple, Dict, Optional
 from django.db.models import Avg, Max, Min, Count
 from django.utils import timezone
 
-from .models import Sorteio, EstatisticaNumero, EstatisticaEstrela, ApostaGerada
+from .models import Sorteio, EstatisticaNumero, EstatisticaEstrela, ApostaGerada, ApostaMultipla
 
 
 class AnalisadorEstatistico:
@@ -593,17 +593,110 @@ class GeradorApostas:
         combinacoes_geradas = set()
         max_tentativas = quantidade * 10
         tentativas = 0
-        
+
         while len(apostas) < quantidade and tentativas < max_tentativas:
             aposta = self.gerar_e_guardar(estrategia)
             combo = (tuple(aposta.get_numeros()), tuple(aposta.get_estrelas()))
-            
+
             if combo not in combinacoes_geradas:
                 combinacoes_geradas.add(combo)
                 apostas.append(aposta)
             else:
                 aposta.delete()
-            
+
             tentativas += 1
-        
+
         return apostas
+
+    def gerar_aposta_multipla(
+        self,
+        estrategia: str,
+        n_numeros: int = 6,
+        n_estrelas: int = 3
+    ) -> ApostaMultipla:
+        """
+        Gera uma aposta multipla (mais de 5 numeros e/ou 2 estrelas).
+
+        Args:
+            estrategia: 'frequencia', 'equilibrada', 'aleatorio', 'frios', 'mista'
+            n_numeros: Quantidade de numeros a selecionar (5-10)
+            n_estrelas: Quantidade de estrelas a selecionar (2-5)
+
+        Returns:
+            Instancia de ApostaMultipla
+        """
+        # Validar limites
+        n_numeros = max(5, min(10, n_numeros))
+        n_estrelas = max(2, min(5, n_estrelas))
+
+        # Obter pools baseados na estrategia
+        if estrategia == 'frequencia':
+            pool_numeros = self.analisador.numeros_quentes(25)
+            pool_estrelas = self.analisador.estrelas_quentes(8)
+        elif estrategia == 'frios':
+            pool_numeros = self.analisador.numeros_frios(25)
+            pool_estrelas = self.analisador.estrelas_frias(8)
+        elif estrategia == 'equilibrada':
+            # Equilibrar baixos/altos
+            baixos = list(range(1, 26))
+            altos = list(range(26, 51))
+            n_baixos = n_numeros // 2 + n_numeros % 2
+            n_altos = n_numeros // 2
+            pool_numeros = random.sample(baixos, n_baixos) + random.sample(altos, n_altos)
+            pool_estrelas = list(range(1, 13))
+        elif estrategia == 'mista':
+            quentes = self.analisador.numeros_quentes(15)
+            frios = self.analisador.numeros_frios(15)
+            atrasados = self.analisador.numeros_atrasados(10)
+            pool_numeros = list(set(quentes + frios + atrasados))
+            pool_estrelas = list(range(1, 13))
+        else:  # aleatorio
+            pool_numeros = list(range(1, 51))
+            pool_estrelas = list(range(1, 13))
+
+        # Selecionar numeros e estrelas
+        numeros = sorted(random.sample(pool_numeros, min(n_numeros, len(pool_numeros))))
+        estrelas = sorted(random.sample(pool_estrelas, min(n_estrelas, len(pool_estrelas))))
+
+        # Completar se necessario
+        while len(numeros) < n_numeros:
+            novo = random.choice([n for n in range(1, 51) if n not in numeros])
+            numeros.append(novo)
+            numeros = sorted(numeros)
+
+        while len(estrelas) < n_estrelas:
+            nova = random.choice([e for e in range(1, 13) if e not in estrelas])
+            estrelas.append(nova)
+            estrelas = sorted(estrelas)
+
+        # Criar e guardar aposta multipla
+        aposta = ApostaMultipla.objects.create(
+            estrategia=estrategia,
+            numeros=numeros,
+            estrelas=estrelas
+        )
+
+        return aposta
+
+    @staticmethod
+    def calcular_tabela_combinacoes():
+        """
+        Retorna tabela com numero de combinacoes e custos para apostas multiplas.
+
+        Returns:
+            Dict com combinacoes possiveis e respetivos custos
+        """
+        from math import comb
+
+        tabela = {}
+        for n in range(5, 11):  # 5 a 10 numeros
+            for e in range(2, 6):  # 2 a 5 estrelas
+                combinacoes = comb(n, 5) * comb(e, 2)
+                custo = combinacoes * 2.50
+                tabela[(n, e)] = {
+                    'numeros': n,
+                    'estrelas': e,
+                    'combinacoes': combinacoes,
+                    'custo': custo
+                }
+        return tabela

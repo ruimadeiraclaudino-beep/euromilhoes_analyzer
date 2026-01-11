@@ -282,3 +282,116 @@ class ApostaGerada(models.Model):
         self.save()
         
         return (self.acertos_numeros, self.acertos_estrelas)
+
+
+class ApostaMultipla(models.Model):
+    """
+    Regista apostas multiplas (mais de 5 numeros e/ou mais de 2 estrelas).
+
+    Combinacoes possiveis:
+    - 5 a 10 numeros (1-50)
+    - 2 a 5 estrelas (1-12)
+
+    Total combinacoes = C(n,5) * C(e,2)
+    """
+    ESTRATEGIAS = [
+        ('frequencia', 'Baseada em Frequência'),
+        ('equilibrada', 'Distribuição Equilibrada'),
+        ('aleatorio', 'Aleatório Puro'),
+        ('frios', 'Números Frios'),
+        ('mista', 'Estratégia Mista'),
+    ]
+
+    data_geracao = models.DateTimeField(auto_now_add=True)
+    estrategia = models.CharField(max_length=20, choices=ESTRATEGIAS)
+
+    # Numeros selecionados (5 a 10) - guardados como JSON
+    numeros = models.JSONField(help_text="Lista de 5 a 10 numeros")
+    # Estrelas selecionadas (2 a 5) - guardados como JSON
+    estrelas = models.JSONField(help_text="Lista de 2 a 5 estrelas")
+
+    # Numero de combinacoes geradas
+    total_combinacoes = models.PositiveIntegerField(default=1)
+
+    # Custo da aposta (2.50 EUR por combinacao)
+    custo_total = models.DecimalField(max_digits=10, decimal_places=2, default=2.50)
+
+    class Meta:
+        ordering = ['-data_geracao']
+        verbose_name = "Aposta Múltipla"
+        verbose_name_plural = "Apostas Múltiplas"
+
+    def __str__(self):
+        return f"Aposta Múltipla {self.id}: {len(self.numeros)}N + {len(self.estrelas)}E ({self.total_combinacoes} comb.)"
+
+    def get_numeros(self):
+        return sorted(self.numeros)
+
+    def get_estrelas(self):
+        return sorted(self.estrelas)
+
+    def calcular_combinacoes(self):
+        """Calcula o numero total de combinacoes."""
+        from math import comb
+        n_numeros = len(self.numeros)
+        n_estrelas = len(self.estrelas)
+        return comb(n_numeros, 5) * comb(n_estrelas, 2)
+
+    def gerar_todas_combinacoes(self):
+        """Gera todas as combinacoes possiveis da aposta multipla."""
+        from itertools import combinations
+        todas = []
+        for nums in combinations(sorted(self.numeros), 5):
+            for ests in combinations(sorted(self.estrelas), 2):
+                todas.append({
+                    'numeros': list(nums),
+                    'estrelas': list(ests)
+                })
+        return todas
+
+    def verificar_resultado(self, sorteio):
+        """
+        Verifica todas as combinacoes contra um sorteio.
+        Retorna lista de resultados ordenada por acertos.
+        """
+        numeros_sorteio = set(sorteio.get_numeros())
+        estrelas_sorteio = set(sorteio.get_estrelas())
+
+        resultados = []
+        for comb in self.gerar_todas_combinacoes():
+            acertos_n = len(set(comb['numeros']) & numeros_sorteio)
+            acertos_e = len(set(comb['estrelas']) & estrelas_sorteio)
+            resultados.append({
+                'numeros': comb['numeros'],
+                'estrelas': comb['estrelas'],
+                'acertos_numeros': acertos_n,
+                'acertos_estrelas': acertos_e,
+                'premio': self._calcular_premio(acertos_n, acertos_e)
+            })
+
+        return sorted(resultados, key=lambda x: (x['acertos_numeros'], x['acertos_estrelas']), reverse=True)
+
+    def _calcular_premio(self, acertos_n, acertos_e):
+        """Retorna descricao do premio baseado nos acertos."""
+        premios = {
+            (5, 2): "1º Prémio (Jackpot)",
+            (5, 1): "2º Prémio",
+            (5, 0): "3º Prémio",
+            (4, 2): "4º Prémio",
+            (4, 1): "5º Prémio",
+            (4, 0): "6º Prémio",
+            (3, 2): "7º Prémio",
+            (3, 1): "8º Prémio",
+            (2, 2): "9º Prémio",
+            (3, 0): "10º Prémio",
+            (1, 2): "11º Prémio",
+            (2, 1): "12º Prémio",
+            (2, 0): "13º Prémio",
+        }
+        return premios.get((acertos_n, acertos_e), "Sem prémio")
+
+    def save(self, *args, **kwargs):
+        """Calcula combinacoes e custo antes de guardar."""
+        self.total_combinacoes = self.calcular_combinacoes()
+        self.custo_total = self.total_combinacoes * 2.50
+        super().save(*args, **kwargs)

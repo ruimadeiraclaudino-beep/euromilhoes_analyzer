@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.db.models import Avg, Max, Min, Count
 from django.contrib import messages
 
-from .models import Sorteio, EstatisticaNumero, EstatisticaEstrela, ApostaGerada
+from .models import Sorteio, EstatisticaNumero, EstatisticaEstrela, ApostaGerada, ApostaMultipla
 from .services import AnalisadorEstatistico, GeradorApostas
 from .ml import PrevisaoML
 
@@ -15,35 +15,36 @@ from .ml import PrevisaoML
 class DashboardView(TemplateView):
     """Vista principal com resumo das estatísticas."""
     template_name = 'sorteios/dashboard.html'
-    
+
     def get_context_data(self, **kwargs):
+        import json
         context = super().get_context_data(**kwargs)
-        
+
         # Estatísticas gerais
         context['total_sorteios'] = Sorteio.objects.count()
         context['ultimo_sorteio'] = Sorteio.objects.first()
-        
+
         # Números quentes e frios
         context['numeros_quentes'] = EstatisticaNumero.objects.order_by('-frequencia')[:10]
         context['numeros_frios'] = EstatisticaNumero.objects.order_by('frequencia')[:10]
         context['numeros_atrasados'] = EstatisticaNumero.objects.order_by('-dias_sem_sair')[:10]
-        
+
         # Estrelas
         context['estrelas_quentes'] = EstatisticaEstrela.objects.order_by('-frequencia')[:5]
         context['estrelas_frias'] = EstatisticaEstrela.objects.order_by('frequencia')[:5]
-        
+
         # Últimos sorteios
         context['ultimos_sorteios'] = Sorteio.objects.all()[:10]
-        
-        # Dados para gráficos
+
+        # Dados para gráficos (serializados como JSON)
         estatisticas_numeros = EstatisticaNumero.objects.all().order_by('numero')
-        context['numeros_labels'] = [e.numero for e in estatisticas_numeros]
-        context['numeros_frequencias'] = [e.frequencia for e in estatisticas_numeros]
-        
+        context['numeros_labels'] = json.dumps([e.numero for e in estatisticas_numeros])
+        context['numeros_frequencias'] = json.dumps([e.frequencia for e in estatisticas_numeros])
+
         estatisticas_estrelas = EstatisticaEstrela.objects.all().order_by('estrela')
-        context['estrelas_labels'] = [e.estrela for e in estatisticas_estrelas]
-        context['estrelas_frequencias'] = [e.frequencia for e in estatisticas_estrelas]
-        
+        context['estrelas_labels'] = json.dumps([e.estrela for e in estatisticas_estrelas])
+        context['estrelas_frequencias'] = json.dumps([e.frequencia for e in estatisticas_estrelas])
+
         return context
 
 
@@ -95,28 +96,44 @@ class EstatisticasEstrelasView(ListView):
 
 
 class GeradorApostasView(TemplateView):
-    """Interface para gerar apostas."""
+    """Interface para gerar apostas simples e múltiplas."""
     template_name = 'sorteios/gerador_apostas.html'
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['estrategias'] = ApostaGerada.ESTRATEGIAS
         context['apostas_recentes'] = ApostaGerada.objects.all()[:20]
+        context['apostas_multiplas_recentes'] = ApostaMultipla.objects.all()[:10]
+        context['tabela_combinacoes'] = GeradorApostas.calcular_tabela_combinacoes()
         return context
-    
+
     def post(self, request, *args, **kwargs):
+        tipo_aposta = request.POST.get('tipo_aposta', 'simples')
         estrategia = request.POST.get('estrategia', 'aleatorio')
-        quantidade = int(request.POST.get('quantidade', 1))
-        quantidade = min(max(quantidade, 1), 10)  # Limitar entre 1 e 10
-        
         gerador = GeradorApostas()
-        apostas = gerador.gerar_multiplas(estrategia, quantidade)
-        
-        messages.success(
-            request, 
-            f'{len(apostas)} aposta(s) gerada(s) com estratégia "{estrategia}"!'
-        )
-        
+
+        if tipo_aposta == 'multipla':
+            n_numeros = int(request.POST.get('n_numeros', 6))
+            n_estrelas = int(request.POST.get('n_estrelas', 3))
+            n_numeros = min(max(n_numeros, 5), 10)
+            n_estrelas = min(max(n_estrelas, 2), 5)
+
+            aposta = gerador.gerar_aposta_multipla(estrategia, n_numeros, n_estrelas)
+            messages.success(
+                request,
+                f'Aposta múltipla gerada: {n_numeros} números + {n_estrelas} estrelas = '
+                f'{aposta.total_combinacoes} combinações ({aposta.custo_total:.2f}€)'
+            )
+        else:
+            quantidade = int(request.POST.get('quantidade', 1))
+            quantidade = min(max(quantidade, 1), 10)
+
+            apostas = gerador.gerar_multiplas(estrategia, quantidade)
+            messages.success(
+                request,
+                f'{len(apostas)} aposta(s) simples gerada(s) com estratégia "{estrategia}"!'
+            )
+
         return redirect('gerador_apostas')
 
 
