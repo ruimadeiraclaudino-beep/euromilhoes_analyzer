@@ -50,6 +50,12 @@ Cada sorteio do EuroMilhoes e um **evento independente**. Os numeros nao tem "me
 - **Multiplas apostas** de uma vez
 - **Historico** de apostas geradas
 
+### Atualizacao Automatica (v2.1)
+- **Web scraping** da fonte portuguesa (euro-millions.com/pt)
+- **Importacao por ano** ou historico completo desde 2004
+- **Modo dry-run** para preview antes de importar
+- **Atualizacao de estatisticas** automatica apos importacao
+
 ### Interface
 - **Modo Escuro** (v2.0) - toggle na navbar com persistencia
 - **Design responsivo** - Bootstrap 5
@@ -162,6 +168,29 @@ Podes encontrar dados historicos em:
 - [Kaggle - EuroMillions](https://www.kaggle.com/search?q=euromillions)
 - [Euro-Millions.com](https://www.euro-millions.com/results-history)
 
+### Opcao 4: Web Scraping Automatico (v2.1)
+
+Atualiza automaticamente os sorteios via web scraping da fonte portuguesa:
+
+```bash
+# Verificar e importar resultados recentes
+python manage.py atualizar_sorteios
+
+# Importar todos os sorteios de um ano especifico
+python manage.py atualizar_sorteios --ano 2024
+
+# Importar todo o historico desde 2004
+python manage.py atualizar_sorteios --todos
+
+# Apenas mostrar o que seria importado (sem gravar)
+python manage.py atualizar_sorteios --dry-run
+
+# Importar sem atualizar estatisticas
+python manage.py atualizar_sorteios --no-stats
+```
+
+**Fonte:** [euro-millions.com/pt](https://www.euro-millions.com/pt) (versao portuguesa)
+
 ## Atualizar Estatisticas
 
 Apos importar novos sorteios:
@@ -215,7 +244,8 @@ euromilhoes_analyzer/
     ├── management/
     │   └── commands/
     │       ├── importar_sorteios.py
-    │       └── atualizar_estatisticas.py
+    │       ├── atualizar_estatisticas.py
+    │       └── atualizar_sorteios.py   # Web scraping (v2.1)
     ├── templates/
     │   └── sorteios/
     │       ├── base.html              # Template base com modo escuro
@@ -368,6 +398,13 @@ docker pull ghcr.io/ruimadeiraclaudino-beep/euromilhoes_analyzer:latest
 
 ## Changelog
 
+### v2.1.0 (2026)
+- Web scraping automatico para atualizacao de sorteios
+- Fonte portuguesa (euro-millions.com/pt)
+- Suporte para importar ano especifico ou historico completo
+- Modo dry-run para preview
+- Correcao de serializacao JSON nos graficos avancados
+
 ### v2.0.0 (2025)
 - Analise de padroes (consecutivos, dezenas, terminacoes, sequencias)
 - Previsoes ML experimentais com multiplas estrategias
@@ -386,11 +423,11 @@ docker pull ghcr.io/ruimadeiraclaudino-beep/euromilhoes_analyzer:latest
 
 ## Proximos Passos Sugeridos
 
-1. Adicionar web scraping automatico para novos sorteios
-2. Implementar notificacoes de novos resultados
-3. Criar modo de comparacao de estrategias
-4. Exportar apostas para PDF
-5. App mobile (React Native / Flutter)
+1. Implementar notificacoes de novos resultados
+2. Criar modo de comparacao de estrategias
+3. Exportar apostas para PDF
+4. App mobile (React Native / Flutter)
+5. Agendamento automatico de atualizacoes (cron/celery)
 
 ---
 
