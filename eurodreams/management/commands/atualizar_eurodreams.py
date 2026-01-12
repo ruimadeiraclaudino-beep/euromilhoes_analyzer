@@ -396,12 +396,12 @@ class Command(BaseCommand):
                 try:
                     SorteioEuroDreams.objects.create(
                         data=r['data'],
-                        numero_1=r['numeros'][0],
-                        numero_2=r['numeros'][1],
-                        numero_3=r['numeros'][2],
-                        numero_4=r['numeros'][3],
-                        numero_5=r['numeros'][4],
-                        numero_6=r['numeros'][5],
+                        numero1=r['numeros'][0],
+                        numero2=r['numeros'][1],
+                        numero3=r['numeros'][2],
+                        numero4=r['numeros'][3],
+                        numero5=r['numeros'][4],
+                        numero6=r['numeros'][5],
                         dream=r['dream'],
                     )
                     importados += 1

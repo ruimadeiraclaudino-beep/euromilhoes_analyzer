@@ -433,11 +433,11 @@ class Command(BaseCommand):
                 try:
                     SorteioTotoloto.objects.create(
                         data=r['data'],
-                        numero_1=r['numeros'][0],
-                        numero_2=r['numeros'][1],
-                        numero_3=r['numeros'][2],
-                        numero_4=r['numeros'][3],
-                        numero_5=r['numeros'][4],
+                        numero1=r['numeros'][0],
+                        numero2=r['numeros'][1],
+                        numero3=r['numeros'][2],
+                        numero4=r['numeros'][3],
+                        numero5=r['numeros'][4],
                         numero_complementar=r.get('complementar'),
                     )
                     importados += 1
