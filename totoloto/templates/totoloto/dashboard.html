@@ -1,0 +1,228 @@
+{% extends 'totoloto/base.html' %}
+
+{% block totoloto_title %}Dashboard - Totoloto Analyzer{% endblock %}
+
+{% block totoloto_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-suit-diamond-fill text-danger me-2"></i>Totoloto Analyzer</h1>
+    <span class="badge bg-danger fs-6">5 Numeros + Complementar</span>
+</div>
+
+<!-- Cards de resumo -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card h-100 border-danger">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-check fs-1 text-danger"></i>
+                <h3 class="mt-2">{{ total_sorteios }}</h3>
+                <p class="text-muted mb-0">Total de Sorteios</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card h-100 border-danger">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-event fs-1 text-danger"></i>
+                {% if ultimo_sorteio %}
+                <h3 class="mt-2">{{ ultimo_sorteio.data|date:"d/m/Y" }}</h3>
+                {% else %}
+                <h3 class="mt-2">-</h3>
+                {% endif %}
+                <p class="text-muted mb-0">Ultimo Sorteio</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card h-100 border-danger">
+            <div class="card-body text-center">
+                <i class="bi bi-trophy fs-1 text-danger"></i>
+                {% if ultimo_sorteio and ultimo_sorteio.jackpot %}
+                <h3 class="mt-2">{{ ultimo_sorteio.jackpot|floatformat:0 }}€</h3>
+                {% else %}
+                <h3 class="mt-2">-</h3>
+                {% endif %}
+                <p class="text-muted mb-0">Jackpot</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if ultimo_sorteio %}
+<!-- Ultimo sorteio -->
+<div class="card mb-4 border-danger">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="bi bi-star-fill me-2"></i>Ultimo Sorteio - {{ ultimo_sorteio.data|date:"d/m/Y" }}</h5>
+    </div>
+    <div class="card-body text-center">
+        {% for num in ultimo_sorteio.get_numeros %}
+        <span class="numero-ball" style="border-color: #dc3545; color: #dc3545;">{{ num|stringformat:"02d" }}</span>
+        {% endfor %}
+        {% if ultimo_sorteio.numero_complementar %}
+        <span class="mx-2 fs-4">+</span>
+        <span class="numero-ball" style="background: linear-gradient(145deg, #dc3545, #b02a37); color: white; border-color: #dc3545;">
+            {{ ultimo_sorteio.numero_complementar|stringformat:"02d" }}
+        </span>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <!-- Numeros quentes -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-fire me-2"></i>Numeros Quentes</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if numeros_quentes %}
+                <ul class="list-group list-group-flush">
+                    {% for stat in numeros_quentes %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="numero-ball small" style="border-color: #dc3545; color: #dc3545;">{{ stat.numero|stringformat:"02d" }}</span>
+                        <span class="badge bg-danger">{{ stat.frequencia }}x</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted text-center py-3">Sem dados</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Numeros frios -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-snow me-2"></i>Numeros Frios</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if numeros_frios %}
+                <ul class="list-group list-group-flush">
+                    {% for stat in numeros_frios %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="numero-ball small" style="border-color: #0dcaf0; color: #0dcaf0;">{{ stat.numero|stringformat:"02d" }}</span>
+                        <span class="badge bg-info">{{ stat.frequencia }}x</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted text-center py-3">Sem dados</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Numeros atrasados -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Mais Atrasados</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if numeros_atrasados %}
+                <ul class="list-group list-group-flush">
+                    {% for stat in numeros_atrasados %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="numero-ball small" style="border-color: #ffc107; color: #ffc107;">{{ stat.numero|stringformat:"02d" }}</span>
+                        <span class="badge bg-warning text-dark">{{ stat.dias_sem_sair }} dias</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted text-center py-3">Sem dados</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if numeros_labels %}
+<!-- Grafico de frequencias -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Frequencia dos Numeros</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="chartFrequencias" height="100"></canvas>
+    </div>
+</div>
+{% endif %}
+
+<!-- Ultimos sorteios -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-list-ol me-2"></i>Ultimos 10 Sorteios</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if ultimos_sorteios %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Numeros</th>
+                        <th>Complementar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sorteio in ultimos_sorteios %}
+                    <tr>
+                        <td>{{ sorteio.data|date:"d/m/Y" }}</td>
+                        <td>
+                            {% for num in sorteio.get_numeros %}
+                            <span class="numero-ball small" style="border-color: #dc3545; color: #dc3545;">{{ num|stringformat:"02d" }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if sorteio.numero_complementar %}
+                            <span class="numero-ball small" style="background: #dc3545; color: white; border-color: #dc3545;">
+                                {{ sorteio.numero_complementar|stringformat:"02d" }}
+                            </span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-5">Nenhum sorteio registado ainda.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if numeros_labels %}
+<script>
+const ctx = document.getElementById('chartFrequencias').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: {{ numeros_labels|safe }},
+        datasets: [{
+            label: 'Frequencia',
+            data: {{ numeros_frequencias|safe }},
+            backgroundColor: 'rgba(220, 53, 69, 0.7)',
+            borderColor: 'rgba(220, 53, 69, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

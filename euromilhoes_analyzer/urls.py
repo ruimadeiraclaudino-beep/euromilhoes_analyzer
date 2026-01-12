@@ -23,6 +23,8 @@ router.register(r'apostas', ApostaViewSet, basename='api-apostas')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('sorteios.urls')),
+    path('totoloto/', include('totoloto.urls')),
+    path('eurodreams/', include('eurodreams.urls')),
 
     # API REST
     path('api/', include(router.urls)),

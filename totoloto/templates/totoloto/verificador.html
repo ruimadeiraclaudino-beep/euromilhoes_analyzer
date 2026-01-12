@@ -1,0 +1,112 @@
+{% extends 'totoloto/base.html' %}
+
+{% block totoloto_title %}Verificador - Totoloto Analyzer{% endblock %}
+
+{% block totoloto_content %}
+<h1 class="mb-4"><i class="bi bi-check-circle text-danger me-2"></i>Verificador de Apostas</h1>
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card mb-4 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-pencil me-2"></i>Introduza a sua Aposta</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <h6 class="text-danger"><i class="bi bi-circle-fill me-1"></i>Numeros (1-49)</h6>
+                    <div class="row mb-3">
+                        {% for i in "12345" %}
+                        <div class="col">
+                            <input type="number" name="numero{{ forloop.counter }}" class="form-control text-center"
+                                   min="1" max="49" required placeholder="{{ forloop.counter }}">
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100">
+                        <i class="bi bi-search me-2"></i>Verificar Aposta
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Como Funciona</h5>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">
+                    Introduza os 5 numeros da sua aposta e clique em "Verificar".
+                </p>
+                <p class="small text-muted mb-0">
+                    O sistema verifica a sua aposta contra <strong>{{ total_sorteios }} sorteios</strong> historicos.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        {% if numeros %}
+        <div class="card mb-4 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-ticket me-2"></i>Aposta Verificada</h5>
+            </div>
+            <div class="card-body text-center">
+                {% for num in numeros %}
+                <span class="numero-ball" style="border-color: #dc3545; color: #dc3545;">{{ num|stringformat:"02d" }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Resultados ({{ total_vitorias }} acertos)</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if resultados %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Numeros Sorteados</th>
+                                <th>Acertos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in resultados|slice:":50" %}
+                            <tr>
+                                <td>{{ r.sorteio.data|date:"d/m/Y" }}</td>
+                                <td>
+                                    {% for num in r.sorteio.get_numeros %}
+                                    <span class="numero-ball small {% if num in numeros %}bg-success text-white{% endif %}"
+                                          style="border-color: {% if num in numeros %}#198754{% else %}#dc3545{% endif %}; color: {% if num in numeros %}white{% else %}#dc3545{% endif %};">
+                                        {{ num|stringformat:"02d" }}
+                                    </span>
+                                    {% endfor %}
+                                </td>
+                                <td><span class="badge bg-success">{{ r.acertos }} acertos</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-5">Esta aposta nunca acertou 2+ numeros no historico.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-search display-1 text-muted"></i>
+                <h4 class="mt-3">Verifique a sua Aposta</h4>
+                <p class="text-muted">
+                    Introduza os numeros no formulario ao lado para ver quantas vezes teria ganho.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

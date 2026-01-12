@@ -384,6 +384,14 @@
                        href="{% url 'exportar_pdf' %}">
                         <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
                     </a>
+                    <hr>
+                    <small class="text-muted ps-3">Outros Jogos</small>
+                    <a class="nav-link" href="{% url 'totoloto:dashboard' %}">
+                        <i class="bi bi-suit-diamond-fill text-danger"></i> Totoloto
+                    </a>
+                    <a class="nav-link" href="{% url 'eurodreams:dashboard' %}">
+                        <i class="bi bi-moon-stars-fill" style="color: #6f42c1;"></i> EuroDreams
+                    </a>
                     {% if user.is_authenticated %}
                     <hr>
                     <small class="text-muted ps-3">A Minha Conta</small>

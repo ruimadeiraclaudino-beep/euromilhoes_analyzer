@@ -1,0 +1,60 @@
+{% extends 'totoloto/base.html' %}
+
+{% block totoloto_title %}Estatisticas - Totoloto Analyzer{% endblock %}
+
+{% block totoloto_content %}
+<h1 class="mb-4"><i class="bi bi-bar-chart text-danger me-2"></i>Estatisticas dos Numeros</h1>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Numeros 1-49</h5>
+        <div>
+            <a href="?ordem=numero" class="btn btn-sm {% if ordem == 'numero' %}btn-danger{% else %}btn-outline-danger{% endif %}">Numero</a>
+            <a href="?ordem=frequencia" class="btn btn-sm {% if ordem == 'frequencia' %}btn-danger{% else %}btn-outline-danger{% endif %}">Frequencia</a>
+            <a href="?ordem=dias_sem_sair" class="btn btn-sm {% if ordem == 'dias_sem_sair' %}btn-danger{% else %}btn-outline-danger{% endif %}">Atraso</a>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Numero</th>
+                        <th>Frequencia</th>
+                        <th>Percentagem</th>
+                        <th>Ultima Saida</th>
+                        <th>Dias Sem Sair</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in estatisticas %}
+                    <tr>
+                        <td>
+                            <span class="numero-ball small" style="border-color: #dc3545; color: #dc3545;">{{ stat.numero|stringformat:"02d" }}</span>
+                        </td>
+                        <td>{{ stat.frequencia }}</td>
+                        <td>{{ stat.percentagem }}%</td>
+                        <td>{{ stat.ultima_aparicao|date:"d/m/Y"|default:"-" }}</td>
+                        <td>{{ stat.dias_sem_sair }}</td>
+                        <td>
+                            {% if stat.status == 'quente' %}
+                            <span class="badge bg-danger">Quente</span>
+                            {% elif stat.status == 'frio' %}
+                            <span class="badge bg-info">Frio</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Normal</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">Sem estatisticas disponiveis.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends 'eurodreams/base.html' %}
+
+{% block eurodreams_title %}Historico de Sorteios - EuroDreams{% endblock %}
+
+{% block eurodreams_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-calendar-event me-2" style="color: #6f42c1;"></i>Historico de Sorteios</h1>
+    <span class="badge fs-6" style="background: linear-gradient(135deg, #6f42c1, #563d7c);">{{ page_obj.paginator.count }} sorteios</span>
+</div>
+
+{% if sorteios %}
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Data</th>
+                        <th>Numeros</th>
+                        <th>Dream</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sorteio in sorteios %}
+                    <tr>
+                        <td>
+                            <strong>{{ sorteio.data|date:"d/m/Y" }}</strong>
+                            <br>
+                            <small class="text-muted">{{ sorteio.data|date:"l" }}</small>
+                        </td>
+                        <td>
+                            {% for num in sorteio.get_numeros %}
+                            <span class="numero-ball small" style="border-color: #6f42c1; color: #6f42c1;">{{ num|stringformat:"02d" }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <span class="numero-ball small" style="background: linear-gradient(135deg, #ffc107, #fd7e14); color: #333; border-color: #ffc107;">
+                                {{ sorteio.dream }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Paginacao -->
+{% if page_obj.has_other_pages %}
+<nav aria-label="Navegacao de paginas" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1">&laquo; Primeira</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+        </li>
+        {% endif %}
+
+        <li class="page-item active">
+            <span class="page-link" style="background: linear-gradient(135deg, #6f42c1, #563d7c); border-color: #6f42c1;">
+                Pagina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+        </li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Proxima</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Ultima &raquo;</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="alert alert-info text-center">
+    <i class="bi bi-info-circle me-2"></i>
+    Nenhum sorteio registado ainda. Aguarde a importacao dos dados.
+</div>
+{% endif %}
+{% endblock %}

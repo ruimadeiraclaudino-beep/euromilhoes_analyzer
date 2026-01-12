@@ -1,0 +1,28 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}{% block eurodreams_title %}EuroDreams Analyzer{% endblock %}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <nav class="nav nav-pills nav-fill bg-light rounded p-2">
+        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
+           href="{% url 'eurodreams:dashboard' %}" style="{% if request.resolver_match.url_name == 'dashboard' %}background: linear-gradient(135deg, #6f42c1, #563d7c);{% endif %}">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+        </a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'sorteios' %}active{% endif %}"
+           href="{% url 'eurodreams:sorteios' %}" style="{% if request.resolver_match.url_name == 'sorteios' %}background: linear-gradient(135deg, #6f42c1, #563d7c);{% endif %}">
+            <i class="bi bi-calendar-event me-1"></i>Historico
+        </a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'estatisticas' %}active{% endif %}"
+           href="{% url 'eurodreams:estatisticas' %}" style="{% if request.resolver_match.url_name == 'estatisticas' %}background: linear-gradient(135deg, #6f42c1, #563d7c);{% endif %}">
+            <i class="bi bi-bar-chart me-1"></i>Estatisticas
+        </a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'gerador' %}active{% endif %}"
+           href="{% url 'eurodreams:gerador' %}" style="{% if request.resolver_match.url_name == 'gerador' %}background: linear-gradient(135deg, #6f42c1, #563d7c);{% endif %}">
+            <i class="bi bi-dice-5 me-1"></i>Gerador
+        </a>
+    </nav>
+</div>
+
+{% block eurodreams_content %}{% endblock %}
+{% endblock %}

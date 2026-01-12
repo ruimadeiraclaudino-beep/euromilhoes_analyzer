@@ -1,0 +1,66 @@
+{% extends 'totoloto/base.html' %}
+
+{% block totoloto_title %}Historico - Totoloto Analyzer{% endblock %}
+
+{% block totoloto_content %}
+<h1 class="mb-4"><i class="bi bi-calendar-event text-danger me-2"></i>Historico de Sorteios</h1>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Numeros</th>
+                        <th>Complementar</th>
+                        <th>Soma</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sorteio in sorteios %}
+                    <tr>
+                        <td>{{ sorteio.data|date:"d/m/Y" }}</td>
+                        <td>
+                            {% for num in sorteio.get_numeros %}
+                            <span class="numero-ball small" style="border-color: #dc3545; color: #dc3545;">{{ num|stringformat:"02d" }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if sorteio.numero_complementar %}
+                            <span class="numero-ball small" style="background: #dc3545; color: white; border-color: #dc3545;">
+                                {{ sorteio.numero_complementar|stringformat:"02d" }}
+                            </span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>{{ sorteio.soma_numeros }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">Nenhum sorteio registado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if page_obj.has_other_pages %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page=1">Primeira</a></li>
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Seguinte</a></li>
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Ultima</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

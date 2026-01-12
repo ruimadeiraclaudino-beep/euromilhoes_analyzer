@@ -1,0 +1,137 @@
+{% extends 'eurodreams/base.html' %}
+
+{% block eurodreams_title %}Gerador de Apostas - EuroDreams{% endblock %}
+
+{% block eurodreams_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-dice-5 me-2" style="color: #6f42c1;"></i>Gerador de Apostas</h1>
+</div>
+
+<div class="row">
+    <!-- Formulario de geracao -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header text-white" style="background: linear-gradient(135deg, #6f42c1, #563d7c);">
+                <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Configuracoes</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="estrategia" class="form-label">Estrategia</label>
+                        <select class="form-select" id="estrategia" name="estrategia">
+                            {% for codigo, nome in estrategias %}
+                            <option value="{{ codigo }}">{{ nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantidade" class="form-label">Quantidade de Apostas</label>
+                        <input type="number" class="form-control" id="quantidade" name="quantidade" min="1" max="10" value="1">
+                        <small class="text-muted">Maximo: 10 apostas</small>
+                    </div>
+                    <button type="submit" class="btn w-100 text-white" style="background: linear-gradient(135deg, #6f42c1, #563d7c);">
+                        <i class="bi bi-magic me-2"></i>Gerar Apostas
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Descricao das estrategias -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Estrategias</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>Aleatorio:</strong> Numeros completamente aleatorios.</p>
+                <p class="mb-2"><strong>Frequencia:</strong> Numeros que mais saem.</p>
+                <p class="mb-2"><strong>Equilibrada:</strong> Mix de quentes, frios e medios.</p>
+                <p class="mb-2"><strong>Frios:</strong> Numeros que menos saem.</p>
+                <p class="mb-0"><strong>Mista:</strong> Combinacao de todas as estrategias.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apostas geradas -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Apostas Geradas</h5>
+                {% if apostas_recentes %}
+                <span class="badge" style="background-color: #6f42c1;">{{ apostas_recentes|length }} apostas</span>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                {% if apostas_recentes %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data</th>
+                                <th>Numeros</th>
+                                <th>Dream</th>
+                                <th>Estrategia</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for aposta in apostas_recentes %}
+                            <tr>
+                                <td>
+                                    <small>{{ aposta.criada_em|date:"d/m/Y H:i" }}</small>
+                                </td>
+                                <td>
+                                    {% for num in aposta.numeros %}
+                                    <span class="numero-ball small" style="border-color: #6f42c1; color: #6f42c1;">{{ num|stringformat:"02d" }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <span class="numero-ball small" style="background: linear-gradient(135deg, #ffc107, #fd7e14); color: #333; border-color: #ffc107;">
+                                        {{ aposta.dream }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ aposta.get_estrategia_display }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-5">
+                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                    Nenhuma aposta gerada ainda.<br>
+                    Use o formulario para gerar apostas.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Informacao sobre o jogo -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Sobre o EuroDreams</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Como Jogar</h6>
+                <ul>
+                    <li>Escolha <strong>6 numeros</strong> de 1 a 40</li>
+                    <li>Escolha <strong>1 Dream</strong> de 1 a 5</li>
+                    <li>Sorteios as <strong>Segundas e Quintas</strong></li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6>Premio Principal</h6>
+                <div class="alert mb-0" style="background: linear-gradient(135deg, #6f42c1, #563d7c); color: white;">
+                    <strong><i class="bi bi-trophy me-2"></i>20.000 EUR/mes</strong><br>
+                    <small>durante 30 anos!</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

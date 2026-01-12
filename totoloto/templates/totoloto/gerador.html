@@ -1,0 +1,95 @@
+{% extends 'totoloto/base.html' %}
+
+{% block totoloto_title %}Gerador - Totoloto Analyzer{% endblock %}
+
+{% block totoloto_content %}
+<h1 class="mb-4"><i class="bi bi-dice-5 text-danger me-2"></i>Gerador de Apostas</h1>
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card mb-4 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-magic me-2"></i>Gerar Nova Aposta</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Estrategia</label>
+                        <select name="estrategia" class="form-select">
+                            {% for value, label in estrategias %}
+                            <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quantidade</label>
+                        <input type="number" name="quantidade" class="form-control" value="1" min="1" max="10">
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100">
+                        <i class="bi bi-lightning-fill me-2"></i>Gerar Aposta(s)
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Estrategias</h5>
+            </div>
+            <div class="card-body">
+                <dl class="mb-0 small">
+                    <dt>Aleatorio</dt>
+                    <dd class="text-muted">Numeros completamente aleatorios.</dd>
+                    <dt>Frequencia</dt>
+                    <dd class="text-muted">Baseado nos mais frequentes.</dd>
+                    <dt>Equilibrada</dt>
+                    <dd class="text-muted">Mix de baixos/altos e pares/impares.</dd>
+                    <dt>Frios</dt>
+                    <dd class="text-muted">Numeros que ha muito nao saem.</dd>
+                    <dt>Mista</dt>
+                    <dd class="text-muted mb-0">Combina varias estrategias.</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Apostas Geradas</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if apostas_recentes %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Numeros</th>
+                                <th>Estrategia</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for aposta in apostas_recentes %}
+                            <tr>
+                                <td>
+                                    {% for num in aposta.get_numeros %}
+                                    <span class="numero-ball small" style="border-color: #dc3545; color: #dc3545;">{{ num|stringformat:"02d" }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td><span class="badge bg-danger">{{ aposta.get_estrategia_display }}</span></td>
+                                <td>{{ aposta.criada_em|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-5">Nenhuma aposta gerada ainda.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

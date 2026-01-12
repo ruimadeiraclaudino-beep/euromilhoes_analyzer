@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_filters',
     'sorteios',
+    'totoloto',
+    'eurodreams',
 ]
 
 # Django REST Framework
