@@ -1,7 +1,11 @@
-# Workflow para scraping agendado dos resultados do EuroMilhoes
+# Workflow para scraping agendado dos resultados de loterias
+#
+# Jogos suportados:
+#   - EuroMilhoes (tercas e sextas, 21:00 Lisboa)
+#   - Totoloto (quartas e sabados)
+#   - EuroDreams (segundas e quintas)
 #
 # Executa diariamente as 22:00 UTC (23:00 Lisboa no inverno, 00:00 no verao)
-# Os sorteios sao as tercas e sextas-feiras as 21:00 Lisboa
 #
 # Para ativar notificacoes por email, configure os seguintes secrets:
 #   - SMTP_SERVER: servidor SMTP (ex: smtp.gmail.com)
@@ -25,6 +29,16 @@ on:
         required: false
         default: 'false'
         type: boolean
+      game:
+        description: 'Jogo especifico (ou todos)'
+        required: false
+        default: 'todos'
+        type: choice
+        options:
+          - todos
+          - euromilhoes
+          - totoloto
+          - eurodreams
 
 permissions:
   contents: read
@@ -53,18 +67,17 @@ jobs:
         run: |
           python manage.py migrate
 
-      - name: Check for new draws (dry-run)
-        id: check
+      # ============================================
+      # EuroMilhoes
+      # ============================================
+      - name: Check EuroMilhoes (dry-run)
+        id: euromilhoes
+        if: github.event.inputs.game == 'todos' || github.event.inputs.game == 'euromilhoes' || github.event.inputs.game == ''
         run: |
-          OUTPUT=$(python manage.py atualizar_sorteios --dry-run 2>&1)
+          echo "game=euromilhoes" >> $GITHUB_OUTPUT
+          OUTPUT=$(python manage.py atualizar_sorteios --dry-run 2>&1) || true
           echo "$OUTPUT"
 
-          # Guardar output para email
-          echo "output<<EOF" >> $GITHUB_OUTPUT
-          echo "$OUTPUT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-          # Extrair numero de novos sorteios
           if echo "$OUTPUT" | grep -q "Novos: 0"; then
             echo "has_new=false" >> $GITHUB_OUTPUT
             echo "new_count=0" >> $GITHUB_OUTPUT
@@ -73,60 +86,190 @@ jobs:
             echo "new_count=0" >> $GITHUB_OUTPUT
           else
             NEW_COUNT=$(echo "$OUTPUT" | grep -oP "Novos: \K\d+" || echo "0")
-            if [ -z "$NEW_COUNT" ]; then
+            if [ -z "$NEW_COUNT" ] || [ "$NEW_COUNT" == "" ]; then
               NEW_COUNT="0"
             fi
-            echo "has_new=true" >> $GITHUB_OUTPUT
+            if [ "$NEW_COUNT" != "0" ]; then
+              echo "has_new=true" >> $GITHUB_OUTPUT
+            else
+              echo "has_new=false" >> $GITHUB_OUTPUT
+            fi
             echo "new_count=$NEW_COUNT" >> $GITHUB_OUTPUT
-
-            # Extrair ultimo sorteio para o email
-            LAST_DRAW=$(echo "$OUTPUT" | grep -oP "\d{4}-\d{2}-\d{2}: \[[^\]]+\] \+ \[[^\]]+\]" | head -1 || echo "")
-            echo "last_draw=$LAST_DRAW" >> $GITHUB_OUTPUT
           fi
 
-      - name: Import new draws
-        if: steps.check.outputs.has_new == 'true' && github.event.inputs.dry_run != 'true'
+      - name: Import EuroMilhoes
+        if: steps.euromilhoes.outputs.has_new == 'true' && github.event.inputs.dry_run != 'true'
         run: |
           python manage.py atualizar_sorteios --no-stats
-          echo "Importados ${{ steps.check.outputs.new_count }} novos sorteios!"
+          echo "EuroMilhoes: Importados ${{ steps.euromilhoes.outputs.new_count }} novos sorteios!"
+
+      # ============================================
+      # Totoloto
+      # ============================================
+      - name: Check Totoloto (dry-run)
+        id: totoloto
+        if: github.event.inputs.game == 'todos' || github.event.inputs.game == 'totoloto' || github.event.inputs.game == ''
+        run: |
+          echo "game=totoloto" >> $GITHUB_OUTPUT
+          OUTPUT=$(python manage.py atualizar_totoloto --dry-run 2>&1) || true
+          echo "$OUTPUT"
+
+          if echo "$OUTPUT" | grep -q "Novos: 0"; then
+            echo "has_new=false" >> $GITHUB_OUTPUT
+            echo "new_count=0" >> $GITHUB_OUTPUT
+          elif echo "$OUTPUT" | grep -q "ja esta atualizada"; then
+            echo "has_new=false" >> $GITHUB_OUTPUT
+            echo "new_count=0" >> $GITHUB_OUTPUT
+          elif echo "$OUTPUT" | grep -q "Nenhum resultado encontrado"; then
+            echo "has_new=false" >> $GITHUB_OUTPUT
+            echo "new_count=0" >> $GITHUB_OUTPUT
+          else
+            NEW_COUNT=$(echo "$OUTPUT" | grep -oP "Novos: \K\d+" || echo "0")
+            if [ -z "$NEW_COUNT" ] || [ "$NEW_COUNT" == "" ]; then
+              NEW_COUNT="0"
+            fi
+            if [ "$NEW_COUNT" != "0" ]; then
+              echo "has_new=true" >> $GITHUB_OUTPUT
+            else
+              echo "has_new=false" >> $GITHUB_OUTPUT
+            fi
+            echo "new_count=$NEW_COUNT" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Import Totoloto
+        if: steps.totoloto.outputs.has_new == 'true' && github.event.inputs.dry_run != 'true'
+        run: |
+          python manage.py atualizar_totoloto --no-stats
+          echo "Totoloto: Importados ${{ steps.totoloto.outputs.new_count }} novos sorteios!"
+
+      # ============================================
+      # EuroDreams
+      # ============================================
+      - name: Check EuroDreams (dry-run)
+        id: eurodreams
+        if: github.event.inputs.game == 'todos' || github.event.inputs.game == 'eurodreams' || github.event.inputs.game == ''
+        run: |
+          echo "game=eurodreams" >> $GITHUB_OUTPUT
+          OUTPUT=$(python manage.py atualizar_eurodreams --dry-run 2>&1) || true
+          echo "$OUTPUT"
+
+          if echo "$OUTPUT" | grep -q "Novos: 0"; then
+            echo "has_new=false" >> $GITHUB_OUTPUT
+            echo "new_count=0" >> $GITHUB_OUTPUT
+          elif echo "$OUTPUT" | grep -q "ja esta atualizada"; then
+            echo "has_new=false" >> $GITHUB_OUTPUT
+            echo "new_count=0" >> $GITHUB_OUTPUT
+          elif echo "$OUTPUT" | grep -q "Nenhum resultado encontrado"; then
+            echo "has_new=false" >> $GITHUB_OUTPUT
+            echo "new_count=0" >> $GITHUB_OUTPUT
+          else
+            NEW_COUNT=$(echo "$OUTPUT" | grep -oP "Novos: \K\d+" || echo "0")
+            if [ -z "$NEW_COUNT" ] || [ "$NEW_COUNT" == "" ]; then
+              NEW_COUNT="0"
+            fi
+            if [ "$NEW_COUNT" != "0" ]; then
+              echo "has_new=true" >> $GITHUB_OUTPUT
+            else
+              echo "has_new=false" >> $GITHUB_OUTPUT
+            fi
+            echo "new_count=$NEW_COUNT" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Import EuroDreams
+        if: steps.eurodreams.outputs.has_new == 'true' && github.event.inputs.dry_run != 'true'
+        run: |
+          python manage.py atualizar_eurodreams --no-stats
+          echo "EuroDreams: Importados ${{ steps.eurodreams.outputs.new_count }} novos sorteios!"
+
+      # ============================================
+      # Notifications
+      # ============================================
+      - name: Prepare notification data
+        id: notify
+        run: |
+          TOTAL=0
+          GAMES=""
+
+          # EuroMilhoes
+          EM_COUNT="${{ steps.euromilhoes.outputs.new_count }}"
+          if [ "$EM_COUNT" != "" ] && [ "$EM_COUNT" != "0" ]; then
+            TOTAL=$((TOTAL + EM_COUNT))
+            GAMES="${GAMES}EuroMilhoes: ${EM_COUNT} novo(s)\n"
+          fi
+
+          # Totoloto
+          TL_COUNT="${{ steps.totoloto.outputs.new_count }}"
+          if [ "$TL_COUNT" != "" ] && [ "$TL_COUNT" != "0" ]; then
+            TOTAL=$((TOTAL + TL_COUNT))
+            GAMES="${GAMES}Totoloto: ${TL_COUNT} novo(s)\n"
+          fi
+
+          # EuroDreams
+          ED_COUNT="${{ steps.eurodreams.outputs.new_count }}"
+          if [ "$ED_COUNT" != "" ] && [ "$ED_COUNT" != "0" ]; then
+            TOTAL=$((TOTAL + ED_COUNT))
+            GAMES="${GAMES}EuroDreams: ${ED_COUNT} novo(s)\n"
+          fi
+
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+          echo "games<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$GAMES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          if [ "$TOTAL" -gt 0 ]; then
+            echo "has_new=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_new=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Send email notification
-        if: steps.check.outputs.has_new == 'true' && vars.NOTIFICATION_EMAIL != ''
+        if: steps.notify.outputs.has_new == 'true' && vars.NOTIFICATION_EMAIL != ''
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: ${{ secrets.SMTP_SERVER }}
           server_port: ${{ secrets.SMTP_PORT }}
           username: ${{ secrets.SMTP_USERNAME }}
           password: ${{ secrets.SMTP_PASSWORD }}
-          subject: "EuroMilhoes - ${{ steps.check.outputs.new_count }} novo(s) sorteio(s)!"
+          subject: "Loterias - ${{ steps.notify.outputs.total }} novo(s) sorteio(s)!"
           to: ${{ vars.NOTIFICATION_EMAIL }}
-          from: EuroMilhoes Analyzer <${{ secrets.SMTP_USERNAME }}>
+          from: Loterias Analyzer <${{ secrets.SMTP_USERNAME }}>
           html_body: |
             <!DOCTYPE html>
             <html>
             <head>
               <style>
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .header { background: #1a365d; color: white; padding: 20px; text-align: center; }
+                .header { background: linear-gradient(135deg, #1a365d, #2d3748); color: white; padding: 20px; text-align: center; }
                 .content { padding: 20px; }
-                .draw-box { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin: 15px 0; }
-                .numbers { font-size: 24px; font-weight: bold; color: #2b6cb0; }
-                .stars { font-size: 24px; font-weight: bold; color: #d69e2e; }
+                .game-box { border-radius: 8px; padding: 15px; margin: 15px 0; }
+                .euromilhoes { background: #eef2ff; border: 1px solid #3b82f6; }
+                .totoloto { background: #fef2f2; border: 1px solid #ef4444; }
+                .eurodreams { background: #f5f3ff; border: 1px solid #8b5cf6; }
                 .footer { background: #f7fafc; padding: 15px; text-align: center; font-size: 12px; color: #718096; }
                 a { color: #2b6cb0; }
               </style>
             </head>
             <body>
               <div class="header">
-                <h1>EuroMilhoes Analyzer</h1>
+                <h1>Loterias Analyzer</h1>
                 <p>Novos resultados disponiveis!</p>
               </div>
               <div class="content">
-                <p>Foram encontrados <strong>${{ steps.check.outputs.new_count }}</strong> novo(s) sorteio(s).</p>
+                <p>Foram encontrados <strong>${{ steps.notify.outputs.total }}</strong> novo(s) sorteio(s).</p>
 
-                <div class="draw-box">
-                  <h3>Ultimo Sorteio</h3>
-                  <p>${{ steps.check.outputs.last_draw }}</p>
+                <div class="game-box euromilhoes">
+                  <h3>EuroMilhoes</h3>
+                  <p>${{ steps.euromilhoes.outputs.new_count || '0' }} novo(s) sorteio(s)</p>
+                </div>
+
+                <div class="game-box totoloto">
+                  <h3>Totoloto</h3>
+                  <p>${{ steps.totoloto.outputs.new_count || '0' }} novo(s) sorteio(s)</p>
+                </div>
+
+                <div class="game-box eurodreams">
+                  <h3>EuroDreams</h3>
+                  <p>${{ steps.eurodreams.outputs.new_count || '0' }} novo(s) sorteio(s)</p>
                 </div>
 
                 <p>
@@ -136,24 +279,22 @@ jobs:
                 </p>
               </div>
               <div class="footer">
-                <p>
-                  Fonte: <a href="https://www.euro-millions.com/pt">euro-millions.com/pt</a><br>
-                  <em>Joga com responsabilidade!</em>
-                </p>
+                <p><em>Joga com responsabilidade!</em></p>
               </div>
             </body>
             </html>
 
       - name: Create GitHub Issue for new draws
-        if: steps.check.outputs.has_new == 'true' && github.event.inputs.dry_run != 'true'
+        if: steps.notify.outputs.has_new == 'true' && github.event.inputs.dry_run != 'true'
         uses: actions/github-script@v7
         with:
           script: |
-            const newCount = '${{ steps.check.outputs.new_count }}';
-            const lastDraw = '${{ steps.check.outputs.last_draw }}';
+            const total = '${{ steps.notify.outputs.total }}';
+            const emCount = '${{ steps.euromilhoes.outputs.new_count }}' || '0';
+            const tlCount = '${{ steps.totoloto.outputs.new_count }}' || '0';
+            const edCount = '${{ steps.eurodreams.outputs.new_count }}' || '0';
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
 
-            // Check if issue already exists for today
             const today = new Date().toISOString().split('T')[0];
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
@@ -167,16 +308,22 @@ jobs:
             );
 
             if (!existingIssue) {
+              let body = `## Novos Resultados - ${today}\n\n`;
+              body += `**${total}** novo(s) sorteio(s) encontrado(s).\n\n`;
+              body += `| Jogo | Novos Sorteios |\n`;
+              body += `|------|----------------|\n`;
+              body += `| EuroMilhoes | ${emCount} |\n`;
+              body += `| Totoloto | ${tlCount} |\n`;
+              body += `| EuroDreams | ${edCount} |\n\n`;
+              body += `[Ver detalhes do workflow](${runUrl})\n\n`;
+              body += `---\n`;
+              body += `*Gerado automaticamente pelo workflow de scraping*`;
+
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 title: `Novo(s) sorteio(s) - ${today}`,
-                body: `## Novos Resultados EuroMilhoes\n\n` +
-                      `**${newCount}** novo(s) sorteio(s) encontrado(s).\n\n` +
-                      `### Ultimo Sorteio\n\`${lastDraw}\`\n\n` +
-                      `[Ver detalhes do workflow](${runUrl})\n\n` +
-                      `---\n` +
-                      `*Gerado automaticamente pelo workflow de scraping*`,
+                body: body,
                 labels: ['novo-sorteio', 'automatico']
               });
             }
@@ -185,16 +332,20 @@ jobs:
         run: |
           echo "## Resultado do Scraping" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.check.outputs.has_new }}" == "true" ]; then
-            echo "**${{ steps.check.outputs.new_count }} novo(s) sorteio(s) encontrado(s)**" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Ultimo sorteio: \`${{ steps.check.outputs.last_draw }}\`" >> $GITHUB_STEP_SUMMARY
+
+          echo "| Jogo | Novos Sorteios |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|----------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| EuroMilhoes | ${{ steps.euromilhoes.outputs.new_count || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Totoloto | ${{ steps.totoloto.outputs.new_count || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| EuroDreams | ${{ steps.eurodreams.outputs.new_count || '0' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.notify.outputs.total }}" != "0" ] && [ "${{ steps.notify.outputs.total }}" != "" ]; then
+            echo "**Total: ${{ steps.notify.outputs.total }} novo(s) sorteio(s)**" >> $GITHUB_STEP_SUMMARY
             if [ "${{ github.event.inputs.dry_run }}" == "true" ]; then
               echo "" >> $GITHUB_STEP_SUMMARY
               echo "_Modo dry-run: nenhum dado foi gravado_" >> $GITHUB_STEP_SUMMARY
             fi
           else
-            echo "Nenhum novo sorteio encontrado. Base de dados atualizada." >> $GITHUB_STEP_SUMMARY
+            echo "Base de dados atualizada - nenhum novo sorteio encontrado." >> $GITHUB_STEP_SUMMARY
           fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Fonte: [euro-millions.com/pt](https://www.euro-millions.com/pt)" >> $GITHUB_STEP_SUMMARY
