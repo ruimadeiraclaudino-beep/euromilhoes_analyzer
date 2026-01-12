@@ -1,0 +1,218 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Verificador de Apostas - EuroMilhoes Analyzer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-check-circle me-2"></i>Verificador de Apostas</h1>
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pencil me-2"></i>Introduza a sua Aposta</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <h6 class="text-primary"><i class="bi bi-circle-fill me-1"></i>Numeros (1-50)</h6>
+                    <div class="row mb-3">
+                        {% for field in form %}
+                            {% if 'numero' in field.name %}
+                            <div class="col">
+                                {{ field }}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <h6 class="text-warning"><i class="bi bi-star-fill me-1"></i>Estrelas (1-12)</h6>
+                    <div class="row mb-3">
+                        {% for field in form %}
+                            {% if 'estrela' in field.name %}
+                            <div class="col-6">
+                                {{ field }}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search me-2"></i>Verificar Aposta
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Como Funciona</h5>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">
+                    Introduza os 5 numeros e 2 estrelas da sua aposta e clique em "Verificar".
+                </p>
+                <p class="small text-muted mb-0">
+                    O sistema verifica a sua aposta contra <strong>todos os sorteios historicos</strong>
+                    e mostra quantas vezes teria ganho premio.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        {% if numeros %}
+        <!-- Aposta verificada -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-ticket me-2"></i>Aposta Verificada</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-2">
+                    {% for num in numeros %}
+                    <span class="numero-ball">{{ num|stringformat:"02d" }}</span>
+                    {% endfor %}
+                    <span class="mx-2 fs-4">+</span>
+                    {% for est in estrelas %}
+                    <span class="estrela-ball">{{ est|stringformat:"02d" }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumo -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card stat-card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-calendar-check fs-1 text-primary"></i>
+                        <h3 class="mt-2">{{ total_sorteios }}</h3>
+                        <p class="text-muted mb-0">Sorteios Analisados</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card stat-card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-trophy fs-1 text-success"></i>
+                        <h3 class="mt-2">{{ total_vitorias }}</h3>
+                        <p class="text-muted mb-0">Vezes que Ganharia</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card stat-card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-percent fs-1 text-info"></i>
+                        <h3 class="mt-2">{% widthratio total_vitorias total_sorteios 100 %}%</h3>
+                        <p class="text-muted mb-0">Taxa de Sucesso</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Distribuicao por premio -->
+        {% if resumo %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Distribuicao por Premio</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for premio, count in resumo.items %}
+                    <div class="col-md-4 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>{{ premio }}</span>
+                            <span class="badge bg-success">{{ count }}x</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Resultados detalhados -->
+        {% if resultados %}
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Sorteios onde Ganharia ({{ total_vitorias }})</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Numeros Sorteados</th>
+                                <th>Acertos</th>
+                                <th>Premio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in resultados|slice:":50" %}
+                            <tr>
+                                <td>{{ r.sorteio.data|date:"d/m/Y" }}</td>
+                                <td>
+                                    {% for num in r.sorteio.get_numeros %}
+                                    <span class="numero-ball small {% if num in numeros %}bg-success text-white{% endif %}">
+                                        {{ num|stringformat:"02d" }}
+                                    </span>
+                                    {% endfor %}
+                                    +
+                                    {% for est in r.sorteio.get_estrelas %}
+                                    <span class="estrela-ball small {% if est in estrelas %}bg-success{% endif %}">
+                                        {{ est|stringformat:"02d" }}
+                                    </span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ r.acertos_numeros }}N</span>
+                                    <span class="badge bg-warning text-dark">{{ r.acertos_estrelas }}E</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">{{ r.premio.categoria }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if total_vitorias > 50 %}
+                <div class="card-footer text-muted text-center">
+                    A mostrar os primeiros 50 de {{ total_vitorias }} resultados
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            Esta aposta nunca teria ganho premio nos {{ total_sorteios }} sorteios analisados.
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Estado inicial -->
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-search display-1 text-muted"></i>
+                <h4 class="mt-3">Verifique a sua Aposta</h4>
+                <p class="text-muted">
+                    Introduza os numeros e estrelas no formulario ao lado para ver
+                    quantas vezes teria ganho premio no historico do EuroMilhoes.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

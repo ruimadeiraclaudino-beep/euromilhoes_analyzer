@@ -1,0 +1,54 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Entrar - EuroMilhoes Analyzer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-box-arrow-in-right me-2"></i>Entrar</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">Nome de utilizador</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                        <div class="text-danger small">{{ form.username.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label">Palavra-passe</label>
+                        {{ form.password }}
+                        {% if form.password.errors %}
+                        <div class="text-danger small">{{ form.password.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
+                    </button>
+                </form>
+
+                <hr>
+
+                <p class="text-center mb-0">
+                    Nao tem conta? <a href="{% url 'register' %}">Registar-se</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

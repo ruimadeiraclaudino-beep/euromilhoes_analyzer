@@ -43,4 +43,25 @@ urlpatterns = [
     path('api/graficos/evolucao/', views.api_evolucao_frequencia, name='api_evolucao_frequencia'),
     path('api/graficos/heatmap-mensal/', views.api_heatmap_mensal, name='api_heatmap_mensal'),
     path('api/graficos/correlacao/', views.api_correlacao_numeros, name='api_correlacao_numeros'),
+
+    # Autenticacao
+    path('conta/login/', views.UserLoginView.as_view(), name='login'),
+    path('conta/registar/', views.UserRegisterView.as_view(), name='register'),
+    path('conta/logout/', views.user_logout, name='logout'),
+    path('conta/perfil/', views.UserProfileView.as_view(), name='profile'),
+
+    # Numeros favoritos e alertas
+    path('conta/favoritos/', views.NumerosFavoritosView.as_view(), name='numeros_favoritos'),
+    path('conta/alertas/', views.AlertasView.as_view(), name='alertas'),
+    path('conta/alertas/<int:pk>/toggle/', views.alerta_toggle, name='alerta_toggle'),
+    path('conta/alertas/<int:pk>/delete/', views.alerta_delete, name='alerta_delete'),
+
+    # Novas funcionalidades
+    path('verificador/', views.VerificadorApostasView.as_view(), name='verificador'),
+    path('analise/dia-semana/', views.AnaliseDiaSemanaView.as_view(), name='analise_dia_semana'),
+    path('jackpot/', views.EvolucaoJackpotView.as_view(), name='evolucao_jackpot'),
+    path('backtest/', views.BacktestView.as_view(), name='backtest'),
+    path('simulador/', views.SimuladorView.as_view(), name='simulador'),
+    path('exportar/', views.ExportarPDFView.as_view(), name='exportar_pdf'),
+    path('exportar/download/', views.exportar_apostas_pdf, name='exportar_pdf_download'),
 ]

@@ -1,0 +1,240 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Analise por Dia da Semana - EuroMilhoes Analyzer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-calendar-week me-2"></i>Analise por Dia da Semana</h1>
+
+<p class="lead mb-4">
+    Comparacao de padroes entre sorteios de <strong>Terca-feira</strong> e <strong>Sexta-feira</strong>.
+</p>
+
+<!-- Cards de resumo -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100" style="border-left: 4px solid #0d6efd;">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-calendar me-2"></i>{{ terca.nome }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h3>{{ terca.total }}</h3>
+                        <small class="text-muted">Sorteios</small>
+                    </div>
+                    <div class="col-4">
+                        <h3>{{ terca.soma_media|floatformat:1 }}</h3>
+                        <small class="text-muted">Soma Media</small>
+                    </div>
+                    <div class="col-4">
+                        <h3>{{ terca.soma_min }}-{{ terca.soma_max }}</h3>
+                        <small class="text-muted">Min-Max</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100" style="border-left: 4px solid #198754;">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-calendar me-2"></i>{{ sexta.nome }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h3>{{ sexta.total }}</h3>
+                        <small class="text-muted">Sorteios</small>
+                    </div>
+                    <div class="col-4">
+                        <h3>{{ sexta.soma_media|floatformat:1 }}</h3>
+                        <small class="text-muted">Soma Media</small>
+                    </div>
+                    <div class="col-4">
+                        <h3>{{ sexta.soma_min }}-{{ sexta.soma_max }}</h3>
+                        <small class="text-muted">Min-Max</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grafico comparativo -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Frequencia dos Numeros por Dia</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="chartComparacao" height="100"></canvas>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Top numeros Terca -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Top 10 Terca</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Numero</th>
+                            <th>Frequencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for num, freq in terca.top_numeros %}
+                        <tr>
+                            <td><span class="numero-ball small">{{ num|stringformat:"02d" }}</span></td>
+                            <td>{{ freq }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top numeros Sexta -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Top 10 Sexta</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Numero</th>
+                            <th>Frequencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for num, freq in sexta.top_numeros %}
+                        <tr>
+                            <td><span class="numero-ball small">{{ num|stringformat:"02d" }}</span></td>
+                            <td>{{ freq }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diferencas significativas -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>Diferencas</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if comparacao.numeros_diferentes %}
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Numero</th>
+                            <th>Diferenca</th>
+                            <th>Favorece</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in comparacao.numeros_diferentes %}
+                        <tr>
+                            <td><span class="numero-ball small">{{ item.numero|stringformat:"02d" }}</span></td>
+                            <td>{{ item.diff }}%</td>
+                            <td>
+                                {% if item.favorece == 'Terca' %}
+                                <span class="badge bg-primary">Terca</span>
+                                {% else %}
+                                <span class="badge bg-success">Sexta</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="p-3 text-center text-muted">
+                    Sem diferencas significativas
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estrelas -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header" style="background: linear-gradient(135deg, #FFD700, #ffc107);">
+                <h5 class="mb-0"><i class="bi bi-star-fill me-2"></i>Estrelas - Terca</h5>
+            </div>
+            <div class="card-body text-center">
+                {% for est, freq in terca.top_estrelas %}
+                <span class="estrela-ball" title="{{ freq }}x">{{ est|stringformat:"02d" }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header" style="background: linear-gradient(135deg, #FFD700, #ffc107);">
+                <h5 class="mb-0"><i class="bi bi-star-fill me-2"></i>Estrelas - Sexta</h5>
+            </div>
+            <div class="card-body text-center">
+                {% for est, freq in sexta.top_estrelas %}
+                <span class="estrela-ball" title="{{ freq }}x">{{ est|stringformat:"02d" }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ctx = document.getElementById('chartComparacao').getContext('2d');
+const labels = Array.from({length: 50}, (_, i) => i + 1);
+
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Terca-feira',
+                data: {{ terca_freq_json|safe }},
+                backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                borderColor: 'rgba(13, 110, 253, 1)',
+                borderWidth: 1
+            },
+            {
+                label: 'Sexta-feira',
+                data: {{ sexta_freq_json|safe }},
+                backgroundColor: 'rgba(25, 135, 84, 0.7)',
+                borderColor: 'rgba(25, 135, 84, 1)',
+                borderWidth: 1
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

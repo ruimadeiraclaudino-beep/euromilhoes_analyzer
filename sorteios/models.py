@@ -2,6 +2,7 @@
 Modelos de dados para análise do EuroMilhões.
 """
 from django.db import models
+from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 
 
@@ -395,3 +396,100 @@ class ApostaMultipla(models.Model):
         self.total_combinacoes = self.calcular_combinacoes()
         self.custo_total = self.total_combinacoes * 2.50
         super().save(*args, **kwargs)
+
+
+class UserProfile(models.Model):
+    """
+    Perfil do utilizador com preferencias e numeros favoritos.
+    """
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='profile'
+    )
+    numeros_favoritos = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Lista de numeros favoritos (1-50)"
+    )
+    estrelas_favoritas = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Lista de estrelas favoritas (1-12)"
+    )
+    alertas_ativos = models.BooleanField(
+        default=True,
+        verbose_name="Alertas Ativos"
+    )
+    email_alertas = models.EmailField(
+        blank=True,
+        verbose_name="Email para Alertas"
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Perfil de Utilizador"
+        verbose_name_plural = "Perfis de Utilizadores"
+
+    def __str__(self):
+        return f"Perfil de {self.user.username}"
+
+    def get_numeros_favoritos(self):
+        """Retorna numeros favoritos ordenados."""
+        return sorted(self.numeros_favoritos) if self.numeros_favoritos else []
+
+    def get_estrelas_favoritas(self):
+        """Retorna estrelas favoritas ordenadas."""
+        return sorted(self.estrelas_favoritas) if self.estrelas_favoritas else []
+
+    def tem_aposta_completa(self):
+        """Verifica se tem 5 numeros e 2 estrelas favoritos."""
+        return len(self.numeros_favoritos) >= 5 and len(self.estrelas_favoritas) >= 2
+
+
+class Alerta(models.Model):
+    """
+    Alertas personalizados dos utilizadores.
+    """
+    TIPOS = [
+        ('numero_atrasado', 'Numero nao sai ha X dias'),
+        ('jackpot_alto', 'Jackpot acima de X euros'),
+        ('numero_saiu', 'Numero favorito saiu'),
+        ('estrela_saiu', 'Estrela favorita saiu'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='alertas'
+    )
+    tipo = models.CharField(max_length=20, choices=TIPOS)
+    parametros = models.JSONField(
+        default=dict,
+        help_text="Parametros do alerta (ex: {'numero': 7, 'dias': 30})"
+    )
+    ativo = models.BooleanField(default=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    ultimo_disparo = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Alerta"
+        verbose_name_plural = "Alertas"
+        ordering = ['-criado_em']
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.user.username}"
+
+    def get_descricao(self):
+        """Retorna descricao legivel do alerta."""
+        if self.tipo == 'numero_atrasado':
+            return f"Numero {self.parametros.get('numero')} nao sai ha {self.parametros.get('dias')} dias"
+        elif self.tipo == 'jackpot_alto':
+            valor = self.parametros.get('valor', 0)
+            return f"Jackpot acima de {valor:,.0f} EUR"
+        elif self.tipo == 'numero_saiu':
+            return f"Numero {self.parametros.get('numero')} saiu no sorteio"
+        elif self.tipo == 'estrela_saiu':
+            return f"Estrela {self.parametros.get('estrela')} saiu no sorteio"
+        return str(self.parametros)

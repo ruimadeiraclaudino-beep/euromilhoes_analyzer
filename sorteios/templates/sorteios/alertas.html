@@ -1,0 +1,161 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Alertas - EuroMilhoes Analyzer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-bell me-2"></i>Meus Alertas</h1>
+
+<div class="row">
+    <div class="col-lg-5">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Criar Novo Alerta</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Alerta</label>
+                        {{ form.tipo }}
+                    </div>
+
+                    <div class="mb-3" id="campo_numero">
+                        <label class="form-label">Numero (1-50)</label>
+                        {{ form.numero }}
+                    </div>
+
+                    <div class="mb-3" id="campo_estrela" style="display: none;">
+                        <label class="form-label">Estrela (1-12)</label>
+                        {{ form.estrela }}
+                    </div>
+
+                    <div class="mb-3" id="campo_dias" style="display: none;">
+                        <label class="form-label">Dias sem sair</label>
+                        {{ form.dias }}
+                    </div>
+
+                    <div class="mb-3" id="campo_jackpot" style="display: none;">
+                        <label class="form-label">Valor do Jackpot (EUR)</label>
+                        {{ form.valor_jackpot }}
+                        <div class="form-text">Ex: 100000000 para 100 milhoes</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-bell-fill me-2"></i>Criar Alerta
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Tipos de Alertas</h5>
+            </div>
+            <div class="card-body">
+                <dl class="mb-0">
+                    <dt><i class="bi bi-clock-history text-warning me-1"></i>Numero nao sai ha X dias</dt>
+                    <dd class="text-muted small mb-3">Notifica quando um numero especifico nao sai ha mais de X dias.</dd>
+
+                    <dt><i class="bi bi-currency-euro text-success me-1"></i>Jackpot acima de X</dt>
+                    <dd class="text-muted small mb-3">Notifica quando o jackpot ultrapassa o valor definido.</dd>
+
+                    <dt><i class="bi bi-check-circle text-primary me-1"></i>Numero favorito saiu</dt>
+                    <dd class="text-muted small mb-3">Notifica quando um numero especifico sai no sorteio.</dd>
+
+                    <dt><i class="bi bi-star text-warning me-1"></i>Estrela favorita saiu</dt>
+                    <dd class="text-muted small mb-0">Notifica quando uma estrela especifica sai no sorteio.</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Alertas Configurados ({{ alertas.count }})</h5>
+            </div>
+            <div class="card-body">
+                {% if alertas %}
+                <div class="list-group list-group-flush">
+                    {% for alerta in alertas %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">
+                                {% if alerta.tipo == 'numero_atrasado' %}
+                                <i class="bi bi-clock-history text-warning me-1"></i>
+                                {% elif alerta.tipo == 'jackpot_alto' %}
+                                <i class="bi bi-currency-euro text-success me-1"></i>
+                                {% elif alerta.tipo == 'numero_saiu' %}
+                                <i class="bi bi-check-circle text-primary me-1"></i>
+                                {% else %}
+                                <i class="bi bi-star text-warning me-1"></i>
+                                {% endif %}
+                                {{ alerta.get_tipo_display }}
+                            </h6>
+                            <small class="text-muted">{{ alerta.get_descricao }}</small>
+                            {% if alerta.ultimo_disparo %}
+                            <br><small class="text-muted">Ultimo disparo: {{ alerta.ultimo_disparo|date:"d/m/Y H:i" }}</small>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <a href="{% url 'alerta_toggle' alerta.pk %}" class="btn btn-sm {% if alerta.ativo %}btn-success{% else %}btn-secondary{% endif %}" title="{% if alerta.ativo %}Ativo{% else %}Inativo{% endif %}">
+                                <i class="bi bi-{% if alerta.ativo %}check-circle{% else %}circle{% endif %}"></i>
+                            </a>
+                            <a href="{% url 'alerta_delete' alerta.pk %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem a certeza que quer eliminar este alerta?')">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-bell-slash display-1 text-muted"></i>
+                    <h4 class="mt-3">Sem Alertas</h4>
+                    <p class="text-muted">
+                        Crie alertas para ser notificado sobre numeros atrasados,
+                        jackpots altos ou quando os seus numeros favoritos saem.
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoSelect = document.getElementById('id_tipo');
+    const campoNumero = document.getElementById('campo_numero');
+    const campoEstrela = document.getElementById('campo_estrela');
+    const campoDias = document.getElementById('campo_dias');
+    const campoJackpot = document.getElementById('campo_jackpot');
+
+    function atualizarCampos() {
+        const tipo = tipoSelect.value;
+
+        campoNumero.style.display = 'none';
+        campoEstrela.style.display = 'none';
+        campoDias.style.display = 'none';
+        campoJackpot.style.display = 'none';
+
+        if (tipo === 'numero_atrasado') {
+            campoNumero.style.display = 'block';
+            campoDias.style.display = 'block';
+        } else if (tipo === 'jackpot_alto') {
+            campoJackpot.style.display = 'block';
+        } else if (tipo === 'numero_saiu') {
+            campoNumero.style.display = 'block';
+        } else if (tipo === 'estrela_saiu') {
+            campoEstrela.style.display = 'block';
+        }
+    }
+
+    tipoSelect.addEventListener('change', atualizarCampos);
+    atualizarCampos();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,170 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Evolucao do Jackpot - EuroMilhoes Analyzer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-currency-euro me-2"></i>Evolucao do Jackpot</h1>
+
+<!-- Cards de resumo -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-cash-stack fs-1 text-success"></i>
+                <h3 class="mt-2">{{ jackpot_atual }}M</h3>
+                <p class="text-muted mb-0">Jackpot Atual</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-graph-up-arrow fs-1 text-primary"></i>
+                <h3 class="mt-2">{{ jackpot_maximo }}M</h3>
+                <p class="text-muted mb-0">Jackpot Maximo</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-calculator fs-1 text-info"></i>
+                <h3 class="mt-2">{{ jackpot_medio }}M</h3>
+                <p class="text-muted mb-0">Jackpot Medio</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-trophy fs-1 text-warning"></i>
+                <h3 class="mt-2">{{ total_vencedores }}</h3>
+                <p class="text-muted mb-0">Total Vencedores</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grafico de evolucao -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Evolucao do Jackpot ao Longo do Tempo</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="chartJackpot" height="120"></canvas>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Estatisticas</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Total de Sorteios com Jackpot:</strong></td>
+                        <td>{{ total_sorteios }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Jackpot Minimo:</strong></td>
+                        <td>{{ jackpot_minimo }} Milhoes EUR</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Jackpot Maximo:</strong></td>
+                        <td>{{ jackpot_maximo }} Milhoes EUR</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Maior Sequencia sem Vencedor:</strong></td>
+                        <td>{{ maior_sequencia_sem_vencedor }} sorteios</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Curiosidades</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>O jackpot minimo do EuroMilhoes e de <strong>17 milhoes de euros</strong>.</li>
+                    <li>O jackpot pode acumular ate um maximo de <strong>250 milhoes de euros</strong>.</li>
+                    <li>Quando nao ha vencedor, o jackpot acumula para o proximo sorteio.</li>
+                    <li>Os sorteios ocorrem as <strong>Tercas e Sextas-feiras</strong>.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const historico = {{ historico_json|safe }};
+
+const labels = historico.map(h => h.data);
+const jackpots = historico.map(h => h.jackpot / 1000000);
+const vencedores = historico.map(h => h.houve_vencedor);
+
+// Cores: verde para sorteios com vencedor, azul para sem vencedor
+const pointColors = vencedores.map(v => v ? '#198754' : '#0d6efd');
+const pointSizes = vencedores.map(v => v ? 8 : 3);
+
+const ctx = document.getElementById('chartJackpot').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Jackpot (Milhoes EUR)',
+            data: jackpots,
+            borderColor: 'rgba(13, 110, 253, 1)',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            fill: true,
+            tension: 0.1,
+            pointBackgroundColor: pointColors,
+            pointRadius: pointSizes,
+            pointHoverRadius: 8
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const idx = context.dataIndex;
+                        const valor = context.parsed.y.toFixed(1);
+                        const vencedor = vencedores[idx] ? ' - HOUVE VENCEDOR!' : '';
+                        return valor + ' Milhoes EUR' + vencedor;
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                type: 'category',
+                display: true,
+                ticks: {
+                    maxTicksLimit: 20
+                }
+            },
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Milhoes EUR'
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Exportar para PDF - EuroMilhoes Analyzer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-file-earmark-pdf me-2"></i>Exportar Apostas para PDF</h1>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-ticket me-2"></i>Apostas Simples</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Exportar as ultimas apostas simples geradas.
+                </p>
+                <p>
+                    <strong>Total disponivel:</strong> {{ total_apostas_simples }} apostas
+                </p>
+
+                <form action="{% url 'exportar_pdf_download' %}" method="get" target="_blank">
+                    <input type="hidden" name="tipo" value="simples">
+
+                    <div class="mb-3">
+                        <label class="form-label">Quantidade de Apostas</label>
+                        <select name="quantidade" class="form-select">
+                            <option value="5">5 apostas</option>
+                            <option value="10" selected>10 apostas</option>
+                            <option value="20">20 apostas</option>
+                            <option value="50">50 apostas</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" {% if total_apostas_simples == 0 %}disabled{% endif %}>
+                        <i class="bi bi-download me-2"></i>Exportar PDF
+                    </button>
+                </form>
+
+                {% if total_apostas_simples == 0 %}
+                <div class="alert alert-warning mt-3 mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Nao ha apostas simples geradas. <a href="{% url 'gerador_apostas' %}">Gere algumas apostas</a> primeiro.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-grid-3x3-gap me-2"></i>Apostas Multiplas</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    Exportar as ultimas apostas multiplas geradas com todas as combinacoes.
+                </p>
+                <p>
+                    <strong>Total disponivel:</strong> {{ total_apostas_multiplas }} apostas
+                </p>
+
+                <form action="{% url 'exportar_pdf_download' %}" method="get" target="_blank">
+                    <input type="hidden" name="tipo" value="multipla">
+
+                    <div class="mb-3">
+                        <label class="form-label">Quantidade de Apostas</label>
+                        <select name="quantidade" class="form-select">
+                            <option value="1">1 aposta</option>
+                            <option value="3" selected>3 apostas</option>
+                            <option value="5">5 apostas</option>
+                            <option value="10">10 apostas</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100" {% if total_apostas_multiplas == 0 %}disabled{% endif %}>
+                        <i class="bi bi-download me-2"></i>Exportar PDF
+                    </button>
+                </form>
+
+                {% if total_apostas_multiplas == 0 %}
+                <div class="alert alert-warning mt-3 mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Nao ha apostas multiplas geradas. <a href="{% url 'gerador_apostas' %}">Gere algumas apostas</a> primeiro.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informacoes</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Sobre o PDF</h6>
+                        <ul class="text-muted">
+                            <li>Formato A4 pronto para imprimir</li>
+                            <li>Inclui numeros, estrelas e estrategia</li>
+                            <li>Para apostas multiplas, inclui todas as combinacoes</li>
+                            <li>Data e hora de geracao incluidas</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Dicas</h6>
+                        <ul class="text-muted">
+                            <li>Guarde o PDF para referencia futura</li>
+                            <li>Verifique os numeros antes de jogar</li>
+                            <li>Jogue com responsabilidade</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

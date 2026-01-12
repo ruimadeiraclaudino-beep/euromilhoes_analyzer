@@ -1,0 +1,239 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Backtest de Estrategias - EuroMilhoes Analyzer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-graph-up-arrow me-2"></i>Backtest de Estrategias</h1>
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-sliders me-2"></i>Parametros do Backtest</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Estrategia</label>
+                        <select name="estrategia" class="form-select">
+                            {% for value, label in estrategias %}
+                            <option value="{{ value }}" {% if estrategia_usada == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Numero de Sorteios a Testar</label>
+                        <input type="number" name="n_sorteios" class="form-control"
+                               value="{{ n_sorteios|default:100 }}" min="10" max="{{ total_sorteios_disponivel }}">
+                        <div class="form-text">Maximo: {{ total_sorteios_disponivel }} sorteios</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-play-fill me-2"></i>Executar Backtest
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>O que e um Backtest?</h5>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">
+                    O backtest simula como uma estrategia teria performado se fosse usada nos sorteios passados.
+                </p>
+                <p class="small text-muted mb-0">
+                    Para cada sorteio historico, o sistema gera uma aposta com a estrategia selecionada
+                    e verifica quantos numeros acertaria.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        {% if resultados %}
+        <!-- Resumo -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-bullseye fs-1 text-primary"></i>
+                        <h3 class="mt-2">{{ media_acertos_n }}</h3>
+                        <p class="text-muted mb-0">Media Acertos (N)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-star-fill fs-1 text-warning"></i>
+                        <h3 class="mt-2">{{ media_acertos_e }}</h3>
+                        <p class="text-muted mb-0">Media Acertos (E)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-trophy fs-1 text-success"></i>
+                        <h3 class="mt-2">{{ total_vitorias }}</h3>
+                        <p class="text-muted mb-0">Total Premios</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-calendar-check fs-1 text-info"></i>
+                        <h3 class="mt-2">{{ n_sorteios }}</h3>
+                        <p class="text-muted mb-0">Sorteios Testados</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Distribuicao de premios -->
+        {% if distribuicao_premios %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Distribuicao de Premios</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for premio, count in distribuicao_premios.items %}
+                    <div class="col-md-4 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>{{ premio }}</span>
+                            <span class="badge bg-success">{{ count }}x</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Grafico de acertos -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Evolucao dos Acertos</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="chartAcertos" height="120"></canvas>
+            </div>
+        </div>
+
+        <!-- Resultados detalhados -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Resultados Detalhados (ultimos 50)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Acertos</th>
+                                <th>Premio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in resultados|slice:":50" %}
+                            <tr>
+                                <td>{{ r.data }}</td>
+                                <td>
+                                    <span class="badge bg-primary">{{ r.acertos_n }}N</span>
+                                    <span class="badge bg-warning text-dark">{{ r.acertos_e }}E</span>
+                                </td>
+                                <td>
+                                    {% if r.premio %}
+                                    <span class="badge bg-success">{{ r.premio }}</span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Estado inicial -->
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-graph-up-arrow display-1 text-muted"></i>
+                <h4 class="mt-3">Execute um Backtest</h4>
+                <p class="text-muted">
+                    Selecione uma estrategia e o numero de sorteios para testar
+                    como ela teria performado no passado.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if resultados_json %}
+<script>
+const resultados = {{ resultados_json|safe }};
+
+const labels = resultados.map(r => r.data);
+const acertosN = resultados.map(r => r.acertos_n);
+const acertosE = resultados.map(r => r.acertos_e);
+
+const ctx = document.getElementById('chartAcertos').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Acertos Numeros',
+                data: acertosN,
+                borderColor: 'rgba(13, 110, 253, 1)',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                tension: 0.1,
+                fill: true
+            },
+            {
+                label: 'Acertos Estrelas',
+                data: acertosE,
+                borderColor: 'rgba(255, 193, 7, 1)',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                tension: 0.1,
+                fill: true
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 5,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

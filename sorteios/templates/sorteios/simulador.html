@@ -1,0 +1,266 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Simulador de Investimento - EuroMilhoes Analyzer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-cash-stack me-2"></i>Simulador de Investimento</h1>
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-sliders me-2"></i>Parametros da Simulacao</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Estrategia</label>
+                        <select name="estrategia" class="form-select">
+                            {% for value, label in estrategias %}
+                            <option value="{{ value }}" {% if estrategia_usada == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Apostas por Sorteio</label>
+                        <input type="number" name="apostas_por_sorteio" class="form-control"
+                               value="{{ apostas_por_sorteio|default:1 }}" min="1" max="10">
+                        <div class="form-text">Custo: {{ custo_aposta }} EUR por aposta</div>
+                    </div>
+
+                    <div class="alert alert-info small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        A simulacao usa todo o historico ({{ total_sorteios_disponivel }} sorteios)
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-play-fill me-2"></i>Iniciar Simulacao
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Aviso</h5>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">
+                    Esta simulacao e puramente educacional e usa valores de premios aproximados.
+                </p>
+                <p class="small text-muted mb-0">
+                    Os resultados nao garantem performance futura. O jogo e aleatorio
+                    e a probabilidade de ganhar o jackpot e de 1 em 139.838.160.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        {% if historico_json %}
+        <!-- Resumo financeiro -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-wallet2 fs-1 text-danger"></i>
+                        <h3 class="mt-2">{{ total_investido|floatformat:0 }}€</h3>
+                        <p class="text-muted mb-0">Total Investido</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-cash fs-1 text-success"></i>
+                        <h3 class="mt-2">{{ total_ganho|floatformat:0 }}€</h3>
+                        <p class="text-muted mb-0">Total Ganho</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-graph-{% if lucro_prejuizo >= 0 %}up text-success{% else %}down text-danger{% endif %} fs-1"></i>
+                        <h3 class="mt-2 {% if lucro_prejuizo >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ lucro_prejuizo|floatformat:0 }}€
+                        </h3>
+                        <p class="text-muted mb-0">Lucro/Prejuizo</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card h-100">
+                    <div class="card-body text-center">
+                        <i class="bi bi-percent fs-1 {% if roi >= 0 %}text-success{% else %}text-danger{% endif %}"></i>
+                        <h3 class="mt-2 {% if roi >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            {{ roi|floatformat:1 }}%
+                        </h3>
+                        <p class="text-muted mb-0">ROI</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grafico de evolucao -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Evolucao do Saldo</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="chartSaldo" height="120"></canvas>
+            </div>
+        </div>
+
+        <!-- Distribuicao de premios -->
+        {% if distribuicao_premios %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-trophy me-2"></i>Premios Ganhos</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for premio, count in distribuicao_premios.items %}
+                    <div class="col-md-4 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>{{ premio }}</span>
+                            <span class="badge bg-success">{{ count }}x</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Maiores vitorias -->
+        {% if maiores_vitorias %}
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-star-fill me-2"></i>Maiores Vitorias</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Premio</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in maiores_vitorias %}
+                            <tr>
+                                <td>{{ v.data }}</td>
+                                <td><span class="badge bg-success">{{ v.premio }}</span></td>
+                                <td class="text-success fw-bold">{{ v.valor|floatformat:0 }}€</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Estado inicial -->
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-cash-stack display-1 text-muted"></i>
+                <h4 class="mt-3">Simule o seu Investimento</h4>
+                <p class="text-muted">
+                    Veja como teria sido o seu retorno se tivesse jogado com uma estrategia
+                    especifica ao longo de todo o historico do EuroMilhoes.
+                </p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if historico_json %}
+<script>
+const historico = {{ historico_json|safe }};
+
+// Usar apenas cada 10o ponto para nao sobrecarregar o grafico
+const step = Math.max(1, Math.floor(historico.length / 200));
+const historicoFiltrado = historico.filter((_, i) => i % step === 0 || i === historico.length - 1);
+
+const labels = historicoFiltrado.map(h => h.data);
+const investido = historicoFiltrado.map(h => h.investido_acumulado);
+const ganho = historicoFiltrado.map(h => h.ganho_acumulado);
+const saldo = historicoFiltrado.map(h => h.saldo);
+
+const ctx = document.getElementById('chartSaldo').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Investido',
+                data: investido,
+                borderColor: 'rgba(220, 53, 69, 1)',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                tension: 0.1,
+                fill: false
+            },
+            {
+                label: 'Ganho',
+                data: ganho,
+                borderColor: 'rgba(25, 135, 84, 1)',
+                backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                tension: 0.1,
+                fill: false
+            },
+            {
+                label: 'Saldo',
+                data: saldo,
+                borderColor: 'rgba(13, 110, 253, 1)',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                tension: 0.1,
+                fill: true
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.dataset.label + ': ' + context.parsed.y.toLocaleString() + '€';
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                ticks: {
+                    callback: function(value) {
+                        if (Math.abs(value) >= 1000000) {
+                            return (value / 1000000).toFixed(1) + 'M€';
+                        } else if (Math.abs(value) >= 1000) {
+                            return (value / 1000).toFixed(0) + 'K€';
+                        }
+                        return value + '€';
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends 'sorteios/base.html' %}
+
+{% block title %}Perfil - EuroMilhoes Analyzer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4"><i class="bi bi-person-circle me-2"></i>O Meu Perfil</h1>
+
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-person me-2"></i>Informacoes da Conta</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Utilizador:</strong> {{ user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email|default:"Nao definido" }}</p>
+                <p><strong>Membro desde:</strong> {{ user.date_joined|date:"d/m/Y" }}</p>
+                {% if profile %}
+                <p><strong>Alertas:</strong> 
+                    {% if profile.alertas_ativos %}
+                    <span class="badge bg-success">Ativos</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inativos</span>
+                    {% endif %}
+                </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Definicoes</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Email para Alertas</label>
+                        {{ form.email_alertas }}
+                        {% if form.email_alertas.errors %}
+                        <div class="text-danger small">{{ form.email_alertas.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        {{ form.alertas_ativos }}
+                        <label class="form-check-label" for="id_alertas_ativos">
+                            Receber alertas por email
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-lg me-2"></i>Guardar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card stat-card mb-4">
+                    <div class="card-body text-center">
+                        <a href="{% url 'numeros_favoritos' %}" class="text-decoration-none">
+                            <i class="bi bi-star fs-1 text-warning"></i>
+                            <h3 class="mt-2">Numeros Favoritos</h3>
+                            <p class="text-muted mb-0">Gerir os meus numeros da sorte</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card stat-card mb-4">
+                    <div class="card-body text-center">
+                        <a href="{% url 'alertas' %}" class="text-decoration-none">
+                            <i class="bi bi-bell fs-1 text-primary"></i>
+                            <h3 class="mt-2">Alertas</h3>
+                            <p class="text-muted mb-0">Configurar notificacoes</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if profile and profile.tem_aposta_completa %}
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-ticket me-2"></i>A Minha Aposta Favorita</h5>
+            </div>
+            <div class="card-body text-center">
+                {% for num in profile.get_numeros_favoritos|slice:":5" %}
+                <span class="numero-ball">{{ num|stringformat:"02d" }}</span>
+                {% endfor %}
+                <span class="mx-2 fs-4">+</span>
+                {% for est in profile.get_estrelas_favoritas|slice:":2" %}
+                <span class="estrela-ball">{{ est|stringformat:"02d" }}</span>
+                {% endfor %}
+
+                <div class="mt-3">
+                    <a href="{% url 'verificador' %}" class="btn btn-outline-success">
+                        <i class="bi bi-search me-2"></i>Verificar no Historico
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-star display-1 text-muted"></i>
+                <h4 class="mt-3">Sem Numeros Favoritos</h4>
+                <p class="text-muted">
+                    Adicione os seus numeros e estrelas favoritos para ver a sua aposta aqui.
+                </p>
+                <a href="{% url 'numeros_favoritos' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Adicionar Favoritos
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
