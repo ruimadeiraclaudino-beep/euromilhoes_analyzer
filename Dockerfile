@@ -1,5 +1,5 @@
 # Dockerfile para EuroMilhões Analyzer
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # Variáveis de ambiente
 ENV PYTHONDONTWRITEBYTECODE=1
